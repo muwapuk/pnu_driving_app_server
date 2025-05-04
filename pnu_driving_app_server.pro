@@ -4,8 +4,14 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 
-LIBS += -lhttpserver
+LIBS += -lhttpserver -ljsoncpp -lSQLiteCpp
 
 SOURCES += \
-        main.cpp
+        appdatabase.cpp \
+        main.cpp \
+        tickets_resources.cpp
+
+HEADERS += \
+    appdatabase.h \
+    tickets_resources.h
 
