@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
 
 
     Question quest = {
+        Question::AB,
         1,
         2,
         "adsf123",
@@ -29,7 +30,7 @@ int main(int argc, char** argv) {
     };
     AppDatabase::getInstance()->addQuestion(quest);
 
-    std::shared_ptr<Question> q1 = AppDatabase::getInstance()->getQuestion(1, 3);
+    std::shared_ptr<Question> q1 = AppDatabase::getInstance()->getQuestion(Question::AB, 1, 3);
 
 
     hello_world_resource hwr;
