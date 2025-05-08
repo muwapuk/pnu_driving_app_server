@@ -18,20 +18,6 @@ int main(int argc, char** argv) {
     AppDatabase::getInstance();
 
 
-    Question quest = {
-        Question::AB,
-        1,
-        2,
-        "adsf123",
-        "adsf123",
-        "adsf123",
-        1123,
-        "adsf123"
-    };
-    AppDatabase::getInstance()->addQuestion(quest);
-
-    std::shared_ptr<Question> q1 = AppDatabase::getInstance()->getQuestion(Question::AB, 1, 3);
-
 
     hello_world_resource hwr;
     ws.register_resource("/hello", &hwr);

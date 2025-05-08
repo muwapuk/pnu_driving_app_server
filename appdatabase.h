@@ -4,6 +4,8 @@
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/Transaction.h>
 #include <string>
+#include <vector>
+#include <list>
 
 struct Question
 {
@@ -14,7 +16,7 @@ struct Question
 
     uint ticket_num;
     uint question_num;
-
+    // In database it has unique id consisting of (ticket_num + question_num*100)*10 + category
 
     std::string image_base64;
     std::string question_text;
@@ -32,7 +34,7 @@ struct User
         superuser,
         teacher,
         student,
-    } permissions;
+    } permissions = student;
 };
 
 // Singleton
@@ -43,7 +45,7 @@ class AppDatabase
 
     // Opens the database
     bool initSQLite(std::string name);
-    bool createTables();
+    bool createTables(); // If not exist
     // Counts tickets amount from different categories and moves result into specific variables
     void countTickets();
 
@@ -61,25 +63,30 @@ public:
     bool addQuestion(Question &);
     bool modifyQuestion(Question &);
     bool deleteQuestion(Question::Category, int ticketNum, int questionNum);
-    std::shared_ptr<Question> getQuestion(Question::Category, int ticketNum, int questionNum);
-
-/*  NOT IMPLEMENTED */
+    Question *getQuestion(Question::Category, int ticketNum, int questionNum);
+    std::list<Question> *getTicketQuestions(Question::Category, int ticketNum);
 
     // User table accessors
     bool addUser(User &);
-    bool deleteUser(std::string login, std::string password);
-    bool changeUserPassword(std::string login, std::string oldPassword, std::string newPassword);
-    bool getUserPermissions(std::string login);
+    bool deleteUser(std::string login);
+    bool changeUserPassword(std::string login, std::string newPassword);
+    User *getUser(std::string login);
+    std::string *getUserPassword(std::string login);
+    std::string *getUserName(std::string login);
+    User::Permissions *getUserPermissions(std::string login);
+
+    /*  NOT IMPLEMENTED */
 
     // User errors table accessors
     bool addError(std::string userLogin, Question::Category category, int ticketNum, int questionNum, int answer);
     bool removeError(std::string userLogin, Question::Category category, int ticketNum, int questionNum);
 
+
 private:
     SQLite::Database *db;
 
-    int ticketsABamount = 0;
-    int ticketsCDamount = 0;
+    uint ticketsABamount = 0;
+    uint ticketsCDamount = 0;
 };
 
 #endif // APPDATABASE_H
