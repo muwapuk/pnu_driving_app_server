@@ -69,11 +69,12 @@ bool AppDatabase::createTables()
 
         db->exec(
             "CREATE TABLE IF NOT EXISTS users_errors ("
-            "question_id INTEGER,"
-            "user_id INTEGER,"
+            "question_id INTEGER NOT NULL,"
+            "user_login INTEGER NOT NULL,"
             "answer INTEGER,"
             "FOREIGN KEY(question_id) REFERENCES questions(id),"
-            "FOREIGN KEY(user_id) REFERENCES users(id));"
+            "FOREIGN KEY(user_login) REFERENCES users(login),"
+            "UNIQUE(question_id, user_login));"
         );
 
 
@@ -445,12 +446,69 @@ User::Permissions *AppDatabase::getUserPermissions(std::string login)
     }
 }
 
-bool AppDatabase::addError(std::string userLogin, Question::Category category, int ticketNum, int questionNum, int answer)
+bool AppDatabase::addError(std::string userLogin,
+                           Question::Category category,
+                           int ticketNum,
+                           int questionNum,
+                           int answer)
 {
+    try {
+        if (questionNum >= 100 or
+            questionNum < 1 or
+            ticketNum < 1 or
+            category < 0
+        ) return false;
 
+        uint question_id = (ticketNum + questionNum*100)*10 + category;
+
+        // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
+        SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES("
+                                     "(SELECT id FROM questions WHERE id = :question_id),"
+                                     "(SELECT login FROM users WHERE login = :user_login),"
+                                     ":answer)"};
+        query.bind(":question_id", question_id);
+        query.bind(":user_login", userLogin);
+        query.bind(":answer", answer);
+
+
+        if (!query.exec())
+            return false;
+
+        return true;
+
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return false;
+    }
 }
 
-bool AppDatabase::removeError(std::string userLogin, Question::Category category, int ticketNum, int questionNum)
+bool AppDatabase::deleteError(std::string userLogin,
+                              Question::Category category,
+                              int ticketNum,
+                              int questionNum)
 {
+    try {
+        if (questionNum >= 100 or
+            questionNum < 1 or
+            ticketNum < 1 or
+            category < 0
+        ) return false;
 
+        uint question_id = (ticketNum + questionNum*100)*10 + category;
+
+        SQLite::Statement query {*db, std::string("DELETE FROM users_errors "
+                                                  "WHERE question_id = :question_id "
+                                                  "AND user_login = :user_login")};
+        query.bind(":user_login", userLogin);
+        query.bind(":question_id", question_id);
+
+        // If no changes
+        if(!query.exec())
+            return false;
+
+        return true;
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return false;
+    }
 }

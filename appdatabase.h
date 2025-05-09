@@ -78,8 +78,15 @@ public:
     /*  NOT IMPLEMENTED */
 
     // User errors table accessors
-    bool addError(std::string userLogin, Question::Category category, int ticketNum, int questionNum, int answer);
-    bool removeError(std::string userLogin, Question::Category category, int ticketNum, int questionNum);
+    bool addError(std::string userLogin,
+                  Question::Category category,
+                  int ticketNum,
+                  int questionNum,
+                  int answer);z
+    bool deleteError(std::string userLogin,
+                     Question::Category category,
+                     int ticketNum,
+                     int questionNum);
 
 
 private:
