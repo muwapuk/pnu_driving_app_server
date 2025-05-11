@@ -4,38 +4,9 @@
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/Transaction.h>
 #include <string>
-#include <vector>
 #include <list>
 
-struct Question
-{
-    enum Category {
-        AB,
-        CD
-    } category;
-
-    uint ticket_num;
-    uint question_num;
-    // In database it has unique id consisting of (ticket_num + question_num*100)*10 + category
-
-    std::string image_base64;
-    std::string question_text;
-    std::string answers;
-    uint rightAnswer;
-    std::string comment;
-};
-
-struct User
-{
-    std::string login;
-    std::string password;
-    std::string name;
-    enum Permissions {
-        superuser,
-        teacher,
-        student,
-    } permissions = student;
-};
+#include "appdatabase_structs.h"
 
 // Singleton
 class AppDatabase
@@ -82,7 +53,7 @@ public:
                   Question::Category category,
                   int ticketNum,
                   int questionNum,
-                  int answer);z
+                  int answer);
     bool deleteError(std::string userLogin,
                      Question::Category category,
                      int ticketNum,

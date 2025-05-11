@@ -288,8 +288,10 @@ std::list<Question> *AppDatabase::getTicketQuestions(Question::Category category
 
             ticket->push_back(requestedQuestion);
         }
-        if (ticket->empty())
+        if (ticket->empty()) {
+            delete ticket;
             return nullptr;
+        }
 
         return ticket;
     } catch(std::exception &e) {
