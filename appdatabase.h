@@ -46,8 +46,6 @@ public:
     std::string *getUserName(std::string login);
     User::Permissions *getUserPermissions(std::string login);
 
-    /*  NOT IMPLEMENTED */
-
     // User errors table accessors
     bool addError(std::string userLogin,
                   Question::Category category,
