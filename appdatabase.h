@@ -57,6 +57,10 @@ public:
                      int ticketNum,
                      int questionNum);
 
+    bool addRememberedUser(std::string login, std::string ip);
+    bool deleteRememberedUser(std::string login);
+    std::string *getUserIp(std::string login);
+
 
 private:
     SQLite::Database *db;
@@ -64,5 +68,9 @@ private:
     uint ticketsABamount = 0;
     uint ticketsCDamount = 0;
 };
+
+inline AppDatabase *AppDB(){
+    return AppDatabase::getInstance();
+}
 
 #endif // APPDATABASE_H

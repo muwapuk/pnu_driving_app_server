@@ -25,8 +25,6 @@ AppDatabase::~AppDatabase()
 
 }
 
-
-
 AppDatabase *AppDatabase::getInstance(std::string databaseName) {
     static AppDatabase instance(databaseName);
     return &instance;
@@ -75,6 +73,49 @@ bool AppDatabase::createTables()
             "FOREIGN KEY(question_id) REFERENCES questions(id),"
             "FOREIGN KEY(user_login) REFERENCES users(login),"
             "UNIQUE(question_id, user_login));"
+        );
+
+        db->exec(
+            "CREATE TABLE IF NOT EXISTS remembered_users ("
+            "user_login TEXT PRIMARY KEY,"
+            "ip TEXT,"
+            "FOREIGN KEY(user_login) REFERENCES users(login),"
+            "UNIQUE(user_login, ip));"
+        );
+
+        /// NOT IMPLEMENTED ///
+        db->exec(
+            "CREATE TABLE IF NOT EXISTS groups ("
+            "name TEXT PRIMARY KEY);"
+        );
+
+        db->exec(
+            "CREATE TABLE IF NOT EXISTS students_to_group ("
+            "student_login TEXT,"
+            "group_name TEXT,"
+            "FOREIGN KEY(student_login) REFERENCES users(login),"
+            "FOREIGN KEY(group_name) REFERENCES groups(name),"
+            "UNIQUE(student_login, group_name));"
+            );
+
+        db->exec(
+            "CREATE TABLE IF NOT EXISTS lectures ("
+            "teacher_login TEXT,"
+            "group_name TEXT,"
+            "cabinet TEXT,"
+            "date TEXT,"
+            "FOREIGN KEY(teacher_login) REFERENCES users(login),"
+            "FOREIGN KEY(group_name) REFERENCES groups(name));"
+        );
+
+        db->exec(
+            "CREATE TABLE IF NOT EXISTS practices ("
+            "teacher_login TEXT,"
+            "student_login TEXT,"
+            "car TEXT,"
+            "date TEXT,"
+            "FOREIGN KEY(teacher_login) REFERENCES users(login),"
+            "FOREIGN KEY(student_login) REFERENCES users(login));"
         );
 
 
@@ -512,5 +553,66 @@ bool AppDatabase::deleteError(std::string userLogin,
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
         return false;
+    }
+}
+
+bool AppDatabase::addRememberedUser(std::string login, std::string ip)
+{
+    try {
+        // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
+        SQLite::Statement query {*db, "INSERT OR REPLACE INTO remembered_users VALUES("
+                                     "user_login = :user_login,"
+                                     "user_ip = :user_ip)"};
+        query.bind(":user_login", login);
+        query.bind(":user_ip", ip);
+
+        if (!query.exec())
+            return false;
+
+        return true;
+
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool AppDatabase::deleteRememberedUser(std::string login)
+{
+    try {
+        // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
+        SQLite::Statement query {*db, std::string("DELETE FROM remembered_users "
+                                                 "WHERE user_login = :user_login")};
+        query.bind(":user_login", login);
+
+        if (!query.exec())
+            return false;
+
+        return true;
+
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::string *AppDatabase::getUserIp(std::string login)
+{
+    try {
+        SQLite::Statement query {*db, "SELECT ip FROM remembered_users "
+                                      "WHERE user_login = :user_login"};
+        query.bind(":user_login", login);
+
+        if (!query.executeStep())
+            return nullptr;
+
+        std::string *ip = new std::string;
+        *ip = query.getColumn(0).getString();
+
+        return ip;
+
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return nullptr;
     }
 }
