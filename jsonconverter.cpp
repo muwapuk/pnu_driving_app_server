@@ -1,7 +1,7 @@
 #include "jsonconverter.h"
 #include <iostream>
 
-    using json = nlohmann::json;
+using json = nlohmann::json;
 
 JsonConverter::Result JsonConverter::stringToJson(const std::string &str, nlohmann::json &j)
 {

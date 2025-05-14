@@ -26,8 +26,6 @@ public:
     static Result jsonToUser(nlohmann::json &, User &);
     static Result userToJson(const User &, nlohmann::json &);
 
-    // NOT IMPLEMENTED
-
     static Result stringToJson(std::string key, const std::string &obj, nlohmann::json &j);
     static Result intToJson(std::string key, int obj, nlohmann::json &j);
 

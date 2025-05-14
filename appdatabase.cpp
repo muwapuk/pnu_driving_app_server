@@ -138,7 +138,7 @@ void AppDatabase::countTickets()
         SQLite::Statement queryCD(*db, "SELECT MAX(ticket_num) FROM questions WHERE category = " + std::to_string(Question::Category::CD));
 
         queryCD.executeStep();
-        ticketsABamount = queryCD.getColumn(0).getInt();
+        ticketsCDamount = queryCD.getColumn(0).getInt();
         queryCD.reset();
 
     } catch(std::exception &e) {
@@ -268,27 +268,24 @@ Question *AppDatabase::getQuestion(Question::Category category, int ticketNum, i
             questionNum < 1 or
             ticketNum < 1 or
             category < 0
-        ) return nullptr;
+        ) return requestedQuestion;
         uint id = (ticketNum + questionNum*100)*10 + category;
 
         SQLite::Statement query {*db, std::string("SELECT * FROM questions WHERE id = " + std::to_string(id))};
 
-        if (!query.hasRow()) {
+        if (!query.executeStep()) {
             return requestedQuestion;
         }
 
         requestedQuestion = new Question;
-        requestedQuestion->question_num = id;
-        while (query.executeStep())
-        {
-                requestedQuestion->ticket_num = query.getColumn(1).getInt();
-                requestedQuestion->question_num = query.getColumn(2).getInt();
-                requestedQuestion->image_base64 = query.getColumn(3).getString();
-                requestedQuestion->question_text = query.getColumn(4).getString();
-                requestedQuestion->answers = query.getColumn(5).getString();
-                requestedQuestion->comment = query.getColumn(6).getString();
-                requestedQuestion->rightAnswer = query.getColumn(7).getInt();
-        }
+
+        requestedQuestion->ticket_num = query.getColumn(1).getInt();
+        requestedQuestion->question_num = query.getColumn(2).getInt();
+        requestedQuestion->image_base64 = query.getColumn(3).getString();
+        requestedQuestion->question_text = query.getColumn(4).getString();
+        requestedQuestion->answers = query.getColumn(5).getString();
+        requestedQuestion->comment = query.getColumn(6).getString();
+        requestedQuestion->rightAnswer = query.getColumn(7).getInt();
 
         return requestedQuestion;
     } catch(std::exception &e) {

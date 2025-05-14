@@ -7,6 +7,7 @@
 struct Question
 {
     enum Category {
+        UNDEFINED,
         AB,
         CD
     } category;
@@ -18,8 +19,8 @@ struct Question
     std::string image_base64;
     std::string question_text;
     std::string answers;
-    uint rightAnswer;
     std::string comment;
+    uint rightAnswer;
 };
 
 struct User

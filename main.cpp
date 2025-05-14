@@ -3,23 +3,37 @@
 #include "questions_resources.h"
 #include "users_resources.h"
 
-#include <iostream>
+
+void register_resources(webserver &server)
+{
+    qr::questions_resource hwr;
+
+    server.register_resource("/questions/category/{category}/ticket/{ticket|[0-9]+}/question/{question|[0-9]+}", &hwr);
+}
 
 
-class hell_world_resource : public http_resource {
-public:
-    std::shared_ptr<http_response> render(const http_request& req) {
-        auto a = req.get_arg("name").values;
-        return std::shared_ptr<http_response>(new string_response("Hello: " + std::string(req.get_arg("ar"))));
-    }
-};
-
-int main(int argc, char** argv) {
+int main(int, char**)
+{
     webserver ws = create_webserver(8080);
 
+    Question q{
+        Question::AB,
+        1,
+        1,
+        "a",
+        "b",
+        "c",
+        "d",
+        2
+    };
+    AppDB()->addQuestion(q);
 
-    hell_world_resource hwr;
-    ws.register_resource("/hello/{ar|[0-99]+}", &hwr);
+    qr::questions_resource questions_src;
+
+    ws.register_resource("/questions/category/{category}/ticket/{ticket|[0-9]+}/question/{question|[0-9]+}", &questions_src);
+    ws.register_resource("/questions", &questions_src);
+
+
     ws.start(true);
 
     return 0;
