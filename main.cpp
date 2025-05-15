@@ -1,7 +1,5 @@
-#include "appdatabase.h"
 #include "jsonconverter.h"
 #include "questions_resources.h"
-#include "users_resources.h"
 
 
 void register_resources(webserver &server)
@@ -28,21 +26,29 @@ int main(int, char**)
         "gr",
         "theme",
         "202k",
-        DBData("2025-11-11 10:10")
+        DBDate("2025-11-11 10:10")
     };
     Practice prac {
         "aboba1",
         "aboba2",
         "theme",
         "car",
-        DBData("2025-11-11 10:10")
+        DBDate("2025-11-11 10:10")
     };
 
-    AppDB()->addPractice(prac);
-    auto l = AppDB()->getPracticesByStudent("aboba1");
-    auto ll = AppDB()->getPracticesByTeacher("aboba1");
-    auto lll = AppDB()->getPracticesByStudent("aboba2");
-    auto llll = AppDB()->getPracticesByTeacher("aboba2");
+
+
+    nlohmann::json j1, j2, j3;
+    j3 = {};
+
+    JsonConverter::userToJson(u1, j1);
+    JsonConverter::userToJson(u2, j2);
+
+    j3.push_back(j1);
+    j3.push_back(j2);
+
+    std::string str;
+    JsonConverter::jsonToJsonString(j3, str);
 
 
 
@@ -50,7 +56,7 @@ int main(int, char**)
     qr::questions_resource questions_src;
 
     ws.register_resource("/questions", &questions_src);
-    ws.register_resource("/questions/category/{category}/ticket/{ticket|[0-9]+}/question/{question|[0-9]+}", &questions_src);
+    ws.register_resource("/questions/categories/{category}/tickets/{ticket|[0-9]+}/questions/{question|[0-9]+}", &questions_src);
 
 
     ws.start(true);

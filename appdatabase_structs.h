@@ -39,9 +39,9 @@ struct User {
     } permissions = student;
 };
 
-struct DBData {
-    DBData() {}
-    DBData(std::string strDate)
+struct DBDate {
+    DBDate() {}
+    DBDate(std::string strDate)
     {
         this->loadFromString(strDate);
     }
@@ -96,7 +96,7 @@ struct Lecture {
     std::string group_name;
     std::string thematic;
     std::string cabinet;
-    DBData date;
+    DBDate date;
 };
 
 struct Practice {
@@ -104,7 +104,7 @@ struct Practice {
     std::string student_name;
     std::string thematic;
     std::string car;
-    DBData date;
+    DBDate date;
 };
 
 

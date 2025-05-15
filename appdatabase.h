@@ -9,21 +9,25 @@
 
 #include "appdatabase_structs.h"
 
+using std::vector;
+using std::pair;
+using std::string;
+
 // Singleton
 class AppDatabase
 {
-    AppDatabase(std::string name);
+    AppDatabase(string name);
     ~AppDatabase();
 
     // Opens the database
-    bool initSQLite(std::string name);
+    bool initSQLite(string name);
     bool createTables(); // If not exist
     // Counts tickets amount from different categories and moves result into specific variables
     void countTickets();
 
 public:
     // Singleton preparation
-    static AppDatabase *getInstance(std::string databaseName = "data.db3");
+    static AppDatabase *getInstance(string databaseName = "data.db3");
     AppDatabase(const AppDatabase &) = delete;
     AppDatabase operator=(const AppDatabase &) = delete;
 
@@ -40,54 +44,58 @@ public:
 
     // User table accessors
     bool addUser(User &);
-    bool deleteUser(std::string login);
-    bool changeUserPassword(std::string login, std::string newPassword);
-    User *getUser(std::string login);
-    std::string *getUserPassword(std::string login);
-    std::string *getUserName(std::string login);
-    User::Permissions *getUserPermissions(std::string login);
-    std::vector<User> *getUsers();
+    bool deleteUser(string login);
+    bool changeUserPassword(string login, string newPassword);
+    User *getUser(string login);
+    string *getUserName(string login);
+    string *getUserPassword(string login);
+    User::Permissions *getUserPermissions(string login);
+
+    vector<User> *getUsers(int startIndx, int amount);
+    vector<pair<string, string>> *getUsersName(int startIndx, int amount);
+    vector<pair<string, string>> *getUsersPassword(int startIndx, int amount);
+    vector<pair<string, User::Permissions>> *getUsersPermissions(int startIndx, int amount);
 
     // User errors table accessors
-    bool addError(std::string userLogin,
+    bool addError(string userLogin,
                   Question::Category category,
                   int ticketNum,
                   int questionNum,
                   int answer);
-    bool deleteError(std::string userLogin,
+    bool deleteError(string userLogin,
                      Question::Category category,
                      int ticketNum,
                      int questionNum);
 
     // Remembered users table accessors
-    bool addRememberedUser(std::string login, std::string ip);
-    bool deleteRememberedUser(std::string login);
-    std::string *getUserIp(std::string login);
+    bool addRememberedUser(string login, string ip);
+    bool deleteRememberedUser(string login);
+    string *getUserIp(string login);
 
     // NOT TESTED
 
     // Groups and students_to_group tables accessors
-    bool addGroup(std::string groupName);
-    bool deleteGroup(std::string groupName);
-    bool addStudentToGroup(std::string studentLogin, std::string groupName);
-    bool deleteStudentFromGroup(std::string studentLogin, std::string groupName);
-    std::vector<std::string> *getGroupStudentsLogins(std::string groupName);
-    std::vector<std::string> *getGroupStudentsNames(std::string groupName);
+    bool addGroup(string groupName);
+    bool deleteGroup(string groupName);
+    bool addStudentToGroup(string studentLogin, string groupName);
+    bool deleteStudentFromGroup(string studentLogin, string groupName);
+    vector<string> *getGroupStudentsLogins(string groupName);
+    vector<string> *getGroupStudentsNames(string groupName);
 
     // NOT IMPLEMENTED
 
     // Lectures table accessors
     int addLecture(Lecture &);
-    bool deleteLecture(std::string teacherName, std::string date);
-    std::vector<Lecture> *getLectures();
-    std::vector<Lecture> *getLecturesByGroup(std::string group);
-    std::vector<Lecture> *getLecturesByTeacher(std::string teacherName);
+    bool deleteLecture(string teacherName, string date);
+    vector<Lecture> *getLectures();
+    vector<Lecture> *getLecturesByGroup(string group);
+    vector<Lecture> *getLecturesByTeacher(string teacherName);
 
     int addPractice(Practice &);
-    bool deletePractice(std::string teacherName, std::string date);
-    std::vector<Practice> *getPractices();
-    std::vector<Practice> *getPracticesByStudent(std::string studentName);
-    std::vector<Practice> *getPracticesByTeacher(std::string teacherName);
+    bool deletePractice(string teacherName, string date);
+    vector<Practice> *getPractices();
+    vector<Practice> *getPracticesByStudent(string studentName);
+    vector<Practice> *getPracticesByTeacher(string teacherName);
 
 
 private:

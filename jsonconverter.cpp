@@ -2,7 +2,7 @@
 
 using json = nlohmann::json;
 
-JsonConverter::Result JsonConverter::stringToJson(const std::string &str, nlohmann::json &j)
+JsonConverter::Result JsonConverter::jsonStringToJson(const std::string &str, nlohmann::json &j)
 {
     json json;
     try {
@@ -20,6 +20,45 @@ JsonConverter::Result JsonConverter::jsonToJsonString(nlohmann::json &j, std::st
 
     ss << j;
     str = ss.str();
+
+    return SUCCESS;
+}
+
+void JsonConverter::mergeJson(nlohmann::json &j, const nlohmann::json &j_patch)
+{
+    j.merge_patch(j_patch);
+}
+
+JsonConverter::Result JsonConverter::jsonObjectToString(const nlohmann::json &j, std::string key, std::string &out)
+{
+    if (!j[key].is_string())
+        return CONVERTATION_ERROR;
+
+    j[key].get_to(out);
+
+    return SUCCESS;
+}
+
+JsonConverter::Result JsonConverter::stringToJson(std::string key, const std::string &obj, nlohmann::json &j)
+{
+    j[key] = obj;
+
+    return SUCCESS;
+}
+
+JsonConverter::Result JsonConverter::jsonObjectToInt(const nlohmann::json &j, std::string key, int &out)
+{
+    if (!j[key].is_number())
+        return CONVERTATION_ERROR;
+
+    j[key].get_to(out);
+
+    return SUCCESS;
+}
+
+JsonConverter::Result JsonConverter::intToJson(std::string key, int obj, nlohmann::json &j)
+{
+    j[key] = obj;
 
     return SUCCESS;
 }
@@ -96,42 +135,89 @@ JsonConverter::Result JsonConverter::userToJson(const User &user, nlohmann::json
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::stringToJson(std::string key, const std::string &obj, nlohmann::json &j)
+JsonConverter::Result JsonConverter::jsonToLecture(nlohmann::json &j, Lecture &lecture)
 {
-    j[key] = obj;
+    if (!j["teacher_name"].is_string()
+        || !j["group_name"].is_string()
+        || !j["thematic"].is_string()
+        || !j["cabinet"].is_number()
+        || !j["date"].is_number()
+        ) return CONVERTATION_ERROR;
+
+    j["teacher_name"].get_to(lecture.teacher_name);
+    j["group_name"].get_to(lecture.group_name);
+    j["thematic"].get_to(lecture.thematic);
+    j["cabinet"].get_to(lecture.cabinet);
+
+    std::string datestr;
+    j["date"].get_to(datestr);
+    if (!lecture.date.loadFromString(datestr))
+        return PARSE_ERROR;
 
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::intToJson(std::string key, int obj, nlohmann::json &j)
+JsonConverter::Result JsonConverter::lectureToJson(Lecture &lecture, nlohmann::json &j)
 {
-    j[key] = obj;
+    json lectureJson = {
+                     {"login", lecture.teacher_name},
+                     {"password", lecture.group_name},
+                     {"name", lecture.thematic},
+                     {"permissions", lecture.cabinet},
+                     {"permissions", lecture.date.getDateString()}
+                    };
+
+    j.merge_patch(lectureJson);
 
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::jsonObjectToString(const nlohmann::json &j, std::string key, std::string &out)
+JsonConverter::Result JsonConverter::jsonToPractice(nlohmann::json &j, Practice &practice)
 {
-    if (!j[key].is_string())
-        return CONVERTATION_ERROR;
+    if (!j["teacher_name"].is_string()
+        || !j["student_name"].is_string()
+        || !j["thematic"].is_string()
+        || !j["car"].is_number()
+        || !j["date"].is_number()
+        ) return CONVERTATION_ERROR;
 
-    j[key].get_to(out);
+    j["teacher_name"].get_to(practice.teacher_name);
+    j["student_name"].get_to(practice.student_name);
+    j["thematic"].get_to(practice.thematic);
+    j["car"].get_to(practice.car);
+
+    std::string datestr;
+    j["date"].get_to(datestr);
+    if (!practice.date.loadFromString(datestr))
+        return PARSE_ERROR;
 
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::jsonObjectToInt(const nlohmann::json &j, std::string key, int &out)
+JsonConverter::Result JsonConverter::practiceToJson(Practice &practice, nlohmann::json &j)
 {
-    if (!j[key].is_number())
-        return CONVERTATION_ERROR;
+    json lectureJson = {
+        {"teacher_name", practice.teacher_name},
+        {"student_name", practice.student_name},
+        {"thematic", practice.thematic},
+        {"car", practice.car},
+        {"date", practice.date.getDateString()}
+    };
 
-    j[key].get_to(out);
+    j.merge_patch(lectureJson);
+
 
     return SUCCESS;
 }
 
-void JsonConverter::mergeJson(nlohmann::json &j, const nlohmann::json &j_patch)
-{
-    j.merge_patch(j_patch);
-}
+
+
+
+
+
+
+
+
+
+
 

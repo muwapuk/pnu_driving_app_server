@@ -42,8 +42,8 @@ std::shared_ptr<http_response>
 questions_resource::render_GET(const http_request &req)
 {
     if (req.get_arg("category").values.empty()
-     || req.get_arg("category").values.empty()
-     || req.get_arg("category").values.empty()
+     || req.get_arg("ticket").values.empty()
+     || req.get_arg("question").values.empty()
     ) return std::shared_ptr<http_response>(new string_response("Resource not specified!", 400));
 
     std::string responseStr;
@@ -108,7 +108,7 @@ questions_resource::render_PUT(const http_request &req)
     json jsonQuest;
 
     // Check json correctness
-    if(JsonConverter::SUCCESS != JsonConverter::stringToJson(
+    if(JsonConverter::SUCCESS != JsonConverter::jsonStringToJson(
         static_cast<std::string>(req.get_content()), jsonQuest)
     ) return std::shared_ptr<http_response>(new string_response("Bad JSON!", 400));
 
@@ -127,8 +127,8 @@ questions_resource::render_DELETE(const http_request &req)
 {
     // Check args are given
     if (req.get_arg("category").values.empty()
-        || req.get_arg("category").values.empty()
-        || req.get_arg("category").values.empty()
+        || req.get_arg("ticket").values.empty()
+        || req.get_arg("question").values.empty()
         ) return std::shared_ptr<http_response>(new string_response("Resource not specified!", 400));
 
     std::string responseStr;
@@ -170,8 +170,8 @@ questions_resource::render_PATCH(const http_request &req)
 
     // Check args are given
     if (req.get_arg("category").values.empty()
-     || req.get_arg("category").values.empty()
-     || req.get_arg("category").values.empty()
+     || req.get_arg("ticket").values.empty()
+     || req.get_arg("question").values.empty()
     ) return std::shared_ptr<http_response>(new string_response("Resource not specified!", 400));
 
     Question::Category category = categories_strings[std::string(req.get_arg("category"))];
@@ -195,7 +195,7 @@ questions_resource::render_PATCH(const http_request &req)
     }
 
     // Check json correctness
-    if(JsonConverter::SUCCESS != JsonConverter::stringToJson(
+    if(JsonConverter::SUCCESS != JsonConverter::jsonStringToJson(
             static_cast<std::string>(req.get_content()), jsonPatch)
     ) return std::shared_ptr<http_response>(new string_response("Bad JSON!", 400));
 

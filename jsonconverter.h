@@ -17,22 +17,37 @@ public:
         CONVERTATION_ERROR
     };
 
-    static Result stringToJson(const std::string &str, nlohmann::json &j);
+    static Result jsonStringToJson(const std::string &str, nlohmann::json &j);
     static Result jsonToJsonString(nlohmann::json &j, std::string &str);
+    static void mergeJson(nlohmann::json &j, const nlohmann::json &j_patch);
 
+    // Standart types
+    static Result jsonObjectToString(const nlohmann::json &j, std::string key, std::string &out);
+    static Result stringToJson(std::string key, const std::string &obj, nlohmann::json &j);
+
+    static Result jsonObjectToInt(const nlohmann::json &j, std::string key, int &out);
+    static Result intToJson(std::string key, int obj, nlohmann::json &j);
+
+    // Question
     static Result jsonToQuestion(nlohmann::json &, Question &);
     static Result questionToJson(const Question &, nlohmann::json &);
 
+    // User
     static Result jsonToUser(const nlohmann::json &, User &);
     static Result userToJson(const User &, nlohmann::json &);
 
-    static Result stringToJson(std::string key, const std::string &obj, nlohmann::json &j);
-    static Result intToJson(std::string key, int obj, nlohmann::json &j);
+    // NOT IMPLEMENTED
 
-    static Result jsonObjectToString(const nlohmann::json &j, std::string key, std::string &out);
-    static Result jsonObjectToInt(const nlohmann::json &j, std::string key, int &out);
+    // Lecture
+    static Result jsonToLecture(nlohmann::json &, Lecture &);
+    static Result lectureToJson(Lecture &, nlohmann::json &);
 
-    static void mergeJson(nlohmann::json &j, const nlohmann::json &j_patch);
+    // Practice
+    static Result jsonToPractice(nlohmann::json &, Practice &);
+    static Result practiceToJson(Practice &, nlohmann::json &);
+
+
+
 };
 
 #endif // JSONCONVERTER_H

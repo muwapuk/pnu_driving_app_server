@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-AppDatabase::AppDatabase(std::string name)
+AppDatabase::AppDatabase(string name)
 {
     initSQLite(name);
     createTables();
@@ -25,12 +25,12 @@ AppDatabase::~AppDatabase()
 
 }
 
-AppDatabase *AppDatabase::getInstance(std::string databaseName) {
+AppDatabase *AppDatabase::getInstance(string databaseName) {
     static AppDatabase instance(databaseName);
     return &instance;
 }
 
-bool AppDatabase::initSQLite(std::string name)
+bool AppDatabase::initSQLite(string name)
 {
     try {
         db = new SQLite::Database(name, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
@@ -253,7 +253,7 @@ bool AppDatabase::deleteQuestion(Question::Category category, int ticketNum, int
 
         uint id = (ticketNum + questionNum*100)*10 + category;
 
-        SQLite::Statement query {*db, std::string("DELETE FROM questions WHERE id = " + std::to_string(id))};
+        SQLite::Statement query {*db, string("DELETE FROM questions WHERE id = " + std::to_string(id))};
 
         // If no changes
         if(!query.exec())
@@ -279,7 +279,7 @@ Question *AppDatabase::getQuestion(Question::Category category, int ticketNum, i
         ) return requestedQuestion;
         uint id = (ticketNum + questionNum*100)*10 + category;
 
-        SQLite::Statement query {*db, std::string("SELECT * FROM questions WHERE id = " + std::to_string(id))};
+        SQLite::Statement query {*db, string("SELECT * FROM questions WHERE id = " + std::to_string(id))};
 
         if (!query.executeStep()) {
             return requestedQuestion;
@@ -370,10 +370,10 @@ bool AppDatabase::addUser(User &user)
     }
 }
 
-bool AppDatabase::deleteUser(std::string login)
+bool AppDatabase::deleteUser(string login)
 {
     try {
-        SQLite::Statement query {*db, std::string("DELETE FROM users WHERE login = :login")};
+        SQLite::Statement query {*db, string("DELETE FROM users WHERE login = :login")};
         query.bind(":login", login);
 
         // If no changes
@@ -387,7 +387,7 @@ bool AppDatabase::deleteUser(std::string login)
     }
 }
 
-bool AppDatabase::changeUserPassword(std::string login, std::string newPassword)
+bool AppDatabase::changeUserPassword(string login, string newPassword)
 {
     try {
         SQLite::Statement query {*db, "UPDATE users SET "
@@ -407,7 +407,7 @@ bool AppDatabase::changeUserPassword(std::string login, std::string newPassword)
     }
 }
 
-User *AppDatabase::getUser(std::string login)
+User *AppDatabase::getUser(string login)
 {
     try {
         SQLite::Statement query {*db, "SELECT * FROM users "
@@ -432,18 +432,18 @@ User *AppDatabase::getUser(std::string login)
     }
 }
 
-std::string *AppDatabase::getUserPassword(std::string login)
+string *AppDatabase::getUserPassword(string login)
 {
     try {
         SQLite::Statement query {*db, "SELECT password FROM users "
                                       "WHERE login = :login"};
         query.bind(":login", login);
 
-        std::string *password = nullptr;
+        string *password = nullptr;
         if (!query.executeStep())
             return password;
 
-        password = new std::string;
+        password = new string;
         *password = query.getColumn(0).getString();
 
         return password;
@@ -454,18 +454,18 @@ std::string *AppDatabase::getUserPassword(std::string login)
     }
 }
 
-std::string *AppDatabase::getUserName(std::string login)
+string *AppDatabase::getUserName(string login)
 {
     try {
         SQLite::Statement query {*db, "SELECT name FROM users "
                                      "WHERE login = :login"};
         query.bind(":login", login);
 
-        std::string *name = nullptr;
+        string *name = nullptr;
         if (!query.executeStep())
             return name;
 
-        name = new std::string;
+        name = new string;
         *name = query.getColumn(0).getString();
 
         return name;
@@ -476,7 +476,7 @@ std::string *AppDatabase::getUserName(std::string login)
     }
 }
 
-User::Permissions *AppDatabase::getUserPermissions(std::string login)
+User::Permissions *AppDatabase::getUserPermissions(string login)
 {
     try {
         SQLite::Statement query {*db, "SELECT permissions FROM users "
@@ -498,36 +498,139 @@ User::Permissions *AppDatabase::getUserPermissions(std::string login)
     }
 }
 
-std::vector<User> *AppDatabase::getUsers()
+vector<User> *AppDatabase::getUsers(int startIndx, int amount)
 {
     try {
-        SQLite::Statement query {*db, "SELECT * FROM users"};
+        vector<User> *users = nullptr;
 
-        std::vector<User> *users = new std::vector<User>;
+        SQLite::Statement query {*db, "SELECT * FROM questions "
+                                      " WHERE rowid >= :startIndx "
+                                      " AND rowid < :amount"};
+        query.bind(":startIndx", startIndx);
+        query.bind(":amount", startIndx+amount);
 
-        while (query.executeStep()) {
-            users->push_back({
-                query.getColumn(0).getString(),
-                query.getColumn(1).getString(),
-                query.getColumn(2).getString(),
-                static_cast<User::Permissions>(query.getColumn(3).getInt())
-            });
+        users = new vector<User> {};
+
+        while (query.executeStep())
+        {
+            User requestedUser;
+
+            requestedUser.login = query.getColumn(0).getString();
+            requestedUser.password = query.getColumn(1).getString();
+            requestedUser.name = query.getColumn(2).getString();
+            requestedUser.permissions = static_cast<User::Permissions>(query.getColumn(3).getInt());
+
+            users->push_back(requestedUser);
         }
-
         if (users->empty()) {
             delete users;
-            users = nullptr;
+            return nullptr;
         }
 
         return users;
-
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
-        return nullptr;
+        return {};
     }
 }
 
-bool AppDatabase::addError(std::string userLogin,
+vector<pair<string, string>> *AppDatabase::getUsersName(int startIndx, int amount)
+{
+    try {
+        vector<pair<string, string>> *users = nullptr;
+
+        SQLite::Statement query {*db, "SELECT login, name FROM questions "
+                                     " WHERE rowid >= :startIndx "
+                                     " AND rowid < :amount"};
+        query.bind(":startIndx", startIndx);
+        query.bind(":amount", startIndx+amount);
+
+        users = new vector<pair<string, string>> {};
+
+        while (query.executeStep())
+        {
+            users->push_back({
+                query.getColumn(0).getString(),
+                query.getColumn(1).getString()
+            });
+        }
+        if (users->empty()) {
+            delete users;
+            return nullptr;
+        }
+
+        return users;
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+vector<pair<string, string>> *AppDatabase::getUsersPassword(int startIndx, int amount)
+{
+    try {
+        vector<pair<string, string>> *users = nullptr;
+
+        SQLite::Statement query {*db, "SELECT login, password FROM questions "
+                                     " WHERE rowid >= :startIndx "
+                                     " AND rowid < :amount"};
+        query.bind(":startIndx", startIndx);
+        query.bind(":amount", startIndx+amount);
+
+        users = new vector<pair<string, string>> {};
+
+        while (query.executeStep())
+        {
+            users->push_back({
+                query.getColumn(0).getString(),
+                query.getColumn(1).getString()
+            });
+        }
+        if (users->empty()) {
+            delete users;
+            return nullptr;
+        }
+
+        return users;
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+vector<pair<string, User::Permissions>> *AppDatabase::getUsersPermissions(int startIndx, int amount)
+{
+    try {
+        vector<pair<string, User::Permissions>> *users = nullptr;
+
+        SQLite::Statement query {*db, "SELECT login, permissions FROM questions "
+                                     " WHERE rowid >= :startIndx "
+                                     " AND rowid < :amount"};
+        query.bind(":startIndx", startIndx);
+        query.bind(":amount", startIndx+amount);
+
+        users = new vector<pair<string, User::Permissions>> {};
+
+        while (query.executeStep())
+        {
+            users->push_back({
+                query.getColumn(0).getString(),
+                static_cast<User::Permissions>(query.getColumn(1).getInt())
+            });
+        }
+        if (users->empty()) {
+            delete users;
+            return nullptr;
+        }
+
+        return users;
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+bool AppDatabase::addError(string userLogin,
                            Question::Category category,
                            int ticketNum,
                            int questionNum,
@@ -564,7 +667,7 @@ bool AppDatabase::addError(std::string userLogin,
     }
 }
 
-bool AppDatabase::deleteError(std::string userLogin,
+bool AppDatabase::deleteError(string userLogin,
                               Question::Category category,
                               int ticketNum,
                               int questionNum)
@@ -579,7 +682,7 @@ bool AppDatabase::deleteError(std::string userLogin,
 
         uint question_id = (ticketNum + questionNum*100)*10 + category;
 
-        SQLite::Statement query {*db, std::string("DELETE FROM users_errors "
+        SQLite::Statement query {*db, string("DELETE FROM users_errors "
                                                   "WHERE question_id = :question_id "
                                                   "AND user_login = :user_login")};
         query.bind(":user_login", userLogin);
@@ -596,7 +699,7 @@ bool AppDatabase::deleteError(std::string userLogin,
     }
 }
 
-bool AppDatabase::addRememberedUser(std::string login, std::string ip)
+bool AppDatabase::addRememberedUser(string login, string ip)
 {
     try {
         // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
@@ -617,10 +720,10 @@ bool AppDatabase::addRememberedUser(std::string login, std::string ip)
     }
 }
 
-bool AppDatabase::deleteRememberedUser(std::string login)
+bool AppDatabase::deleteRememberedUser(string login)
 {
     try {
-        SQLite::Statement query {*db, std::string("DELETE FROM remembered_users "
+        SQLite::Statement query {*db, string("DELETE FROM remembered_users "
                                                  "WHERE user_login = :user_login")};
         query.bind(":user_login", login);
 
@@ -635,7 +738,7 @@ bool AppDatabase::deleteRememberedUser(std::string login)
     }
 }
 
-std::string *AppDatabase::getUserIp(std::string login)
+string *AppDatabase::getUserIp(string login)
 {
     try {
         SQLite::Statement query {*db, "SELECT ip FROM remembered_users "
@@ -645,7 +748,7 @@ std::string *AppDatabase::getUserIp(std::string login)
         if (!query.executeStep())
             return nullptr;
 
-        std::string *ip = new std::string;
+        string *ip = new string;
         *ip = query.getColumn(0).getString();
 
         return ip;
@@ -656,7 +759,7 @@ std::string *AppDatabase::getUserIp(std::string login)
     }
 }
 
-bool AppDatabase::addGroup(std::string groupName)
+bool AppDatabase::addGroup(string groupName)
 {
     try {
         // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
@@ -675,10 +778,10 @@ bool AppDatabase::addGroup(std::string groupName)
     }
 }
 
-bool AppDatabase::deleteGroup(std::string groupName)
+bool AppDatabase::deleteGroup(string groupName)
 {
     try {
-        SQLite::Statement query {*db, std::string("DELETE FROM group "
+        SQLite::Statement query {*db, string("DELETE FROM group "
                                                  "WHERE name = :name")};
         query.bind(":name", groupName);
 
@@ -693,7 +796,7 @@ bool AppDatabase::deleteGroup(std::string groupName)
     }
 }
 
-bool AppDatabase::addStudentToGroup(std::string studentLogin, std::string groupName)
+bool AppDatabase::addStudentToGroup(string studentLogin, string groupName)
 {
     try {
         // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
@@ -714,10 +817,10 @@ bool AppDatabase::addStudentToGroup(std::string studentLogin, std::string groupN
     }
 }
 
-bool AppDatabase::deleteStudentFromGroup(std::string studentLogin, std::string groupName)
+bool AppDatabase::deleteStudentFromGroup(string studentLogin, string groupName)
 {
     try {
-        SQLite::Statement query {*db, std::string("DELETE FROM students_to_group "
+        SQLite::Statement query {*db, string("DELETE FROM students_to_group "
                                                  "WHERE student_login = :student_login AND "
                                                  "group_name = :group_name")};
         query.bind(":student_login", studentLogin);
@@ -734,16 +837,16 @@ bool AppDatabase::deleteStudentFromGroup(std::string studentLogin, std::string g
     }
 }
 
-std::vector<std::string> *AppDatabase::getGroupStudentsLogins(std::string groupName)
+vector<string> *AppDatabase::getGroupStudentsLogins(string groupName)
 {
     try {
         SQLite::Statement query {*db, "SELECT student_login FROM students_to_group "
                                       "WHERE group_name = :group_name"};
         query.bind(":group_name", groupName);
 
-        std::vector<std::string> *students = nullptr;
+        vector<string> *students = nullptr;
 
-        students = new std::vector<std::string>;
+        students = new vector<string>;
 
         while (query.executeStep()) {
             students->push_back(query.getColumn(0).getString());
@@ -762,7 +865,7 @@ std::vector<std::string> *AppDatabase::getGroupStudentsLogins(std::string groupN
     }
 }
 
-std::vector<std::string> *AppDatabase::getGroupStudentsNames(std::string groupName)
+vector<string> *AppDatabase::getGroupStudentsNames(string groupName)
 {
     try {
         SQLite::Statement query {*db, "SELECT users.name FROM students_to_group "
@@ -771,9 +874,9 @@ std::vector<std::string> *AppDatabase::getGroupStudentsNames(std::string groupNa
                                       };
         query.bind(":group_name", groupName);
 
-        std::vector<std::string> *students = nullptr;
+        vector<string> *students = nullptr;
 
-        students = new std::vector<std::string>;
+        students = new vector<string>;
 
         while (query.executeStep()) {
             students->push_back(query.getColumn(0).getString());
@@ -813,7 +916,7 @@ int AppDatabase::addLecture(Lecture &lecture)
     }
 }
 
-bool AppDatabase::deleteLecture(std::string teacherName, std::string date)
+bool AppDatabase::deleteLecture(string teacherName, string date)
 {
     try {
         // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
@@ -836,12 +939,12 @@ bool AppDatabase::deleteLecture(std::string teacherName, std::string date)
 // "SELECT users.name FROM students_to_group "
 //     "JOIN users ON login = student_login "
 //     "WHERE where group_name = :group_name"
-std::vector<Lecture> *AppDatabase::getLectures()
+vector<Lecture> *AppDatabase::getLectures()
 {
     try {
         SQLite::Statement query {*db, "SELECT * FROM lectures"};
 
-        std::vector<Lecture> *lectures = new std::vector<Lecture>;
+        vector<Lecture> *lectures = new vector<Lecture>;
 
         while (query.executeStep()) {
             lectures->push_back(Lecture {
@@ -849,7 +952,7 @@ std::vector<Lecture> *AppDatabase::getLectures()
                 query.getColumn(1).getString(),
                 query.getColumn(2).getString(),
                 query.getColumn(3).getString(),
-                DBData(query.getColumn(4).getString()),
+                DBDate(query.getColumn(4).getString()),
             });
         }
 
@@ -866,14 +969,14 @@ std::vector<Lecture> *AppDatabase::getLectures()
     }
 }
 
-std::vector<Lecture> *AppDatabase::getLecturesByGroup(std::string group)
+vector<Lecture> *AppDatabase::getLecturesByGroup(string group)
 {
     try {
         SQLite::Statement query {*db, "SELECT * FROM lectures "
                                      "WHERE group_name = :group_name"};
         query.bind(":group_name", group);
 
-        std::vector<Lecture> *lectures = new std::vector<Lecture>;
+        vector<Lecture> *lectures = new vector<Lecture>;
 
         while (query.executeStep()) {
             lectures->push_back(Lecture {
@@ -881,7 +984,7 @@ std::vector<Lecture> *AppDatabase::getLecturesByGroup(std::string group)
                 query.getColumn(1).getString(),
                 query.getColumn(2).getString(),
                 query.getColumn(3).getString(),
-                DBData(query.getColumn(4).getString()),
+                DBDate(query.getColumn(4).getString()),
             });
         }
 
@@ -898,14 +1001,14 @@ std::vector<Lecture> *AppDatabase::getLecturesByGroup(std::string group)
     }
 }
 
-std::vector<Lecture> *AppDatabase::getLecturesByTeacher(std::string teacherName)
+vector<Lecture> *AppDatabase::getLecturesByTeacher(string teacherName)
 {
     try {
         SQLite::Statement query {*db, "SELECT * FROM lectures "
                                       "WHERE teacher_name = :teacher_name"};
         query.bind(":teacher_name", teacherName);
 
-        std::vector<Lecture> *lectures = new std::vector<Lecture>;
+        vector<Lecture> *lectures = new vector<Lecture>;
 
         while (query.executeStep()) {
             lectures->push_back(Lecture {
@@ -913,7 +1016,7 @@ std::vector<Lecture> *AppDatabase::getLecturesByTeacher(std::string teacherName)
                 query.getColumn(1).getString(),
                 query.getColumn(2).getString(),
                 query.getColumn(3).getString(),
-                DBData(query.getColumn(4).getString()),
+                DBDate(query.getColumn(4).getString()),
             });
         }
 
@@ -951,7 +1054,7 @@ int AppDatabase::addPractice(Practice &practice)
     }
 }
 
-bool AppDatabase::deletePractice(std::string teacherName, std::string date)
+bool AppDatabase::deletePractice(string teacherName, string date)
 {
     try {
         // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
@@ -972,12 +1075,12 @@ bool AppDatabase::deletePractice(std::string teacherName, std::string date)
     }
 }
 
-std::vector<Practice> *AppDatabase::getPractices()
+vector<Practice> *AppDatabase::getPractices()
 {
     try {
         SQLite::Statement query {*db, "SELECT * FROM practices"};
 
-        std::vector<Practice> *practice = new std::vector<Practice>;
+        vector<Practice> *practice = new vector<Practice>;
 
         while (query.executeStep()) {
             practice->push_back(Practice {
@@ -985,7 +1088,7 @@ std::vector<Practice> *AppDatabase::getPractices()
                 query.getColumn(1).getString(),
                 query.getColumn(2).getString(),
                 query.getColumn(3).getString(),
-                DBData(query.getColumn(4).getString()),
+                DBDate(query.getColumn(4).getString()),
             });
         }
 
@@ -1002,14 +1105,14 @@ std::vector<Practice> *AppDatabase::getPractices()
     }
 }
 
-std::vector<Practice> *AppDatabase::getPracticesByStudent(std::string studentName)
+vector<Practice> *AppDatabase::getPracticesByStudent(string studentName)
 {
     try {
         SQLite::Statement query {*db, "SELECT * FROM practices "
                                       "WHERE student_name = :student_name"};
         query.bind(":student_name", studentName);
 
-        std::vector<Practice> *practice = new std::vector<Practice>;
+        vector<Practice> *practice = new vector<Practice>;
 
         while (query.executeStep()) {
             practice->push_back(Practice {
@@ -1017,7 +1120,7 @@ std::vector<Practice> *AppDatabase::getPracticesByStudent(std::string studentNam
                 query.getColumn(1).getString(),
                 query.getColumn(2).getString(),
                 query.getColumn(3).getString(),
-                DBData(query.getColumn(4).getString()),
+                DBDate(query.getColumn(4).getString()),
             });
         }
 
@@ -1034,14 +1137,14 @@ std::vector<Practice> *AppDatabase::getPracticesByStudent(std::string studentNam
     }
 }
 
-std::vector<Practice> *AppDatabase::getPracticesByTeacher(std::string teacherName)
+vector<Practice> *AppDatabase::getPracticesByTeacher(string teacherName)
 {
     try {
         SQLite::Statement query {*db, "SELECT * FROM practices "
                                      "WHERE teacher_name = :teacher_name"};
         query.bind(":teacher_name", teacherName);
 
-        std::vector<Practice> *practice = new std::vector<Practice>;
+        vector<Practice> *practice = new vector<Practice>;
 
         while (query.executeStep()) {
             practice->push_back(Practice {
@@ -1049,7 +1152,7 @@ std::vector<Practice> *AppDatabase::getPracticesByTeacher(std::string teacherNam
                 query.getColumn(1).getString(),
                 query.getColumn(2).getString(),
                 query.getColumn(3).getString(),
-                DBData(query.getColumn(4).getString()),
+                DBDate(query.getColumn(4).getString()),
             });
         }
 
