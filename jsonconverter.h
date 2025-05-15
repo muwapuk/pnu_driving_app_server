@@ -23,14 +23,16 @@ public:
     static Result jsonToQuestion(nlohmann::json &, Question &);
     static Result questionToJson(const Question &, nlohmann::json &);
 
-    static Result jsonToUser(nlohmann::json &, User &);
+    static Result jsonToUser(const nlohmann::json &, User &);
     static Result userToJson(const User &, nlohmann::json &);
 
     static Result stringToJson(std::string key, const std::string &obj, nlohmann::json &j);
     static Result intToJson(std::string key, int obj, nlohmann::json &j);
 
-    static Result jsonObjectToString(nlohmann::json &j, std::string key, std::string &out);
-    static Result jsonObjectToInt(nlohmann::json &j, std::string key, int &out);
+    static Result jsonObjectToString(const nlohmann::json &j, std::string key, std::string &out);
+    static Result jsonObjectToInt(const nlohmann::json &j, std::string key, int &out);
+
+    static void mergeJson(nlohmann::json &j, const nlohmann::json &j_patch);
 };
 
 #endif // JSONCONVERTER_H

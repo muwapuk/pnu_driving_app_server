@@ -5,6 +5,7 @@
 #include <SQLiteCpp/Transaction.h>
 #include <string>
 #include <list>
+#include <vector>
 
 #include "appdatabase_structs.h"
 
@@ -45,6 +46,7 @@ public:
     std::string *getUserPassword(std::string login);
     std::string *getUserName(std::string login);
     User::Permissions *getUserPermissions(std::string login);
+    std::vector<User> *getUsers();
 
     // User errors table accessors
     bool addError(std::string userLogin,
@@ -57,9 +59,35 @@ public:
                      int ticketNum,
                      int questionNum);
 
+    // Remembered users table accessors
     bool addRememberedUser(std::string login, std::string ip);
     bool deleteRememberedUser(std::string login);
     std::string *getUserIp(std::string login);
+
+    // NOT TESTED
+
+    // Groups and students_to_group tables accessors
+    bool addGroup(std::string groupName);
+    bool deleteGroup(std::string groupName);
+    bool addStudentToGroup(std::string studentLogin, std::string groupName);
+    bool deleteStudentFromGroup(std::string studentLogin, std::string groupName);
+    std::vector<std::string> *getGroupStudentsLogins(std::string groupName);
+    std::vector<std::string> *getGroupStudentsNames(std::string groupName);
+
+    // NOT IMPLEMENTED
+
+    // Lectures table accessors
+    int addLecture(Lecture &);
+    bool deleteLecture(std::string teacherName, std::string date);
+    std::vector<Lecture> *getLectures();
+    std::vector<Lecture> *getLecturesByGroup(std::string group);
+    std::vector<Lecture> *getLecturesByTeacher(std::string teacherName);
+
+    int addPractice(Practice &);
+    bool deletePractice(std::string teacherName, std::string date);
+    std::vector<Practice> *getPractices();
+    std::vector<Practice> *getPracticesByStudent(std::string studentName);
+    std::vector<Practice> *getPracticesByTeacher(std::string teacherName);
 
 
 private:

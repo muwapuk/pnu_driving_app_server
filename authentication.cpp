@@ -1,7 +1,5 @@
 #include "authentication.h"
-
 #include "appdatabase.h"
-
 
 bool authenticate(const httpserver::http_request &req, bool &reload_nonce)
 {
@@ -18,17 +16,33 @@ bool authenticate(const httpserver::http_request &req, bool &reload_nonce)
 
 bool isUserIpRemembered(const httpserver::http_request &req)
 {
-    return AppDB()->getUserIp(std::string(req.get_digested_user()));
+    auto ip = AppDB()->getUserIp(std::string(req.get_digested_user()));
+    if (ip != nullptr) {
+        delete ip;
+        return true;
+    }
+    return false;
 }
 
 bool isUserExist(const httpserver::http_request &req)
 {
-    return AppDB()->getUser(std::string(req.get_digested_user()));
+    auto user = AppDB()->getUser(std::string(req.get_digested_user()));
+    if (user != nullptr) {
+        delete user;
+        return true;
+    }
+    return false;
 }
 
 bool checkPassword(const httpserver::http_request &req, bool &reload_nonce)
 {
     auto pass = AppDB()->getUserPassword(std::string(req.get_digested_user()));
+    bool check = true;
 
-    return !req.check_digest_auth("", *pass, 300, &reload_nonce) ? false : true;
+    if (!req.check_digest_auth("", *pass, 300, &reload_nonce)) {
+        check = false;
+    }
+    delete pass;
+
+    return check;
 }

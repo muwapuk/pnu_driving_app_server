@@ -1,5 +1,4 @@
 #include "jsonconverter.h"
-#include <iostream>
 
 using json = nlohmann::json;
 
@@ -9,7 +8,6 @@ JsonConverter::Result JsonConverter::stringToJson(const std::string &str, nlohma
     try {
         json = json::parse(str);
     } catch (json::exception &e) {
-        std::cerr << e.what() << std::endl;
         return PARSE_ERROR;
     }
     j = json;
@@ -68,7 +66,7 @@ JsonConverter::Result JsonConverter::questionToJson(const Question &question, nl
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::jsonToUser(nlohmann::json &j, User &user)
+JsonConverter::Result JsonConverter::jsonToUser(const nlohmann::json &j, User &user)
 {
     if (!j["login"].is_string()
      || !j["password"].is_string()
@@ -112,7 +110,7 @@ JsonConverter::Result JsonConverter::intToJson(std::string key, int obj, nlohman
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::jsonObjectToString(nlohmann::json &j, std::string key, std::string &out)
+JsonConverter::Result JsonConverter::jsonObjectToString(const nlohmann::json &j, std::string key, std::string &out)
 {
     if (!j[key].is_string())
         return CONVERTATION_ERROR;
@@ -122,7 +120,7 @@ JsonConverter::Result JsonConverter::jsonObjectToString(nlohmann::json &j, std::
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::jsonObjectToInt(nlohmann::json &j, std::string key, int &out)
+JsonConverter::Result JsonConverter::jsonObjectToInt(const nlohmann::json &j, std::string key, int &out)
 {
     if (!j[key].is_number())
         return CONVERTATION_ERROR;
@@ -130,5 +128,10 @@ JsonConverter::Result JsonConverter::jsonObjectToInt(nlohmann::json &j, std::str
     j[key].get_to(out);
 
     return SUCCESS;
+}
+
+void JsonConverter::mergeJson(nlohmann::json &j, const nlohmann::json &j_patch)
+{
+    j.merge_patch(j_patch);
 }
 
