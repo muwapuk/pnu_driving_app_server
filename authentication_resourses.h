@@ -1,5 +1,5 @@
-#ifndef AUTHENTICATION_H
-#define AUTHENTICATION_H
+#ifndef AUTHENTICATION_RESOURSES_H
+#define AUTHENTICATION_RESOURSES_H
 
 #include <httpserver.hpp>
 #include <appdatabase_structs.h>
@@ -9,7 +9,12 @@ using namespace httpserver;
 
 namespace auth {
 
-class authorization_resource : public httpserver::http_resource {
+class signIn_resource : public httpserver::http_resource {
+public:
+    std::shared_ptr<http_response> render_GET(const http_request& req);
+};
+
+class signUp_resource : public httpserver::http_resource {
 public:
     std::shared_ptr<http_response> render_POST(const http_request& req);
 };
@@ -38,7 +43,7 @@ int signIn(const http_request &req, bool &reload_nonce, std::string &token);
 
 bool checkPassword(const http_request &req, bool &reload_nonce);
 
-User::Permissions getPermissionsByToken(std::string token);
+std::pair<std::string, User::Permissions> *tokenToUserAndPermenissions(std::string token);
 
 } // namespace end
 
@@ -48,4 +53,4 @@ User::Permissions getPermissionsByToken(std::string token);
         return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("FAIL", "", MY_OPAQUE, reload_nonce));
 */
 
-#endif // AUTHENTICATION_H
+#endif // AUTHENTICATION_RESOURSES_H

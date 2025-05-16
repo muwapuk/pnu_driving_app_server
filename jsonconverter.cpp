@@ -125,7 +125,6 @@ JsonConverter::Result JsonConverter::userToJson(const User &user, nlohmann::json
 {
     json userJson = {
         {"login", user.login},
-        {"password", user.password},
         {"name", user.name},
         {"permissions", user.permissions},
     };
@@ -160,12 +159,12 @@ JsonConverter::Result JsonConverter::jsonToLecture(nlohmann::json &j, Lecture &l
 JsonConverter::Result JsonConverter::lectureToJson(Lecture &lecture, nlohmann::json &j)
 {
     json lectureJson = {
-                     {"login", lecture.teacher_name},
-                     {"password", lecture.group_name},
-                     {"name", lecture.thematic},
-                     {"permissions", lecture.cabinet},
-                     {"permissions", lecture.date.getDateString()}
-                    };
+        {"login", lecture.teacher_name},
+        {"password", lecture.group_name},
+        {"name", lecture.thematic},
+        {"permissions", lecture.cabinet},
+        {"permissions", lecture.date.getDateString()}
+    };
 
     j.merge_patch(lectureJson);
 

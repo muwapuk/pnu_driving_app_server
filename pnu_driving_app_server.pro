@@ -8,7 +8,7 @@ LIBS += -lhttpserver -ljsoncpp -lSQLiteCpp
 
 SOURCES += \
         appdatabase.cpp \
-        authentication.cpp \
+        authentication_resourses.cpp \
         jsonconverter.cpp \
         main.cpp \
         questions_resources.cpp \
@@ -17,7 +17,7 @@ SOURCES += \
 HEADERS += \
     appdatabase.h \
     appdatabase_structs.h \
-    authentication.h \
+    authentication_resourses.h \
     jsonconverter.h \
     questions_resources.h \
     users_resources.h

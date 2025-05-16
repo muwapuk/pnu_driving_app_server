@@ -1,22 +1,30 @@
-#include "authentication.h"
+#include "authentication_resourses.h"
 #include "appdatabase.h"
 #include "jsonconverter.h"
+#include <iostream>
 
 
-std::shared_ptr<http_response> auth::authorization_resource::render_POST(const http_request& req) {
+std::shared_ptr<http_response> auth::signIn_resource::render_GET(const http_request& req) {
     bool reload_nonce = false;
     std::string token;
+
     int signResult = signIn(req, reload_nonce, token);
 
     if (signResult == 1) {
-        return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("User not found", "", MY_OPAQUE, true));
+        return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("User not found!", "", MY_OPAQUE, false));
     }
     if(signResult == 2) {
-        return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("Incorrect password", "", MY_OPAQUE, reload_nonce));
+        return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("Incorrect password!", "", MY_OPAQUE, reload_nonce));
     }
     auto responce = std::shared_ptr<string_response>(new string_response("SUCCESS", 200, "text/plain"));
     responce->with_header("token", token);
     return responce;
+}
+
+std::shared_ptr<http_response> auth::signUp_resource::render_POST(const http_request& req) {
+    std::string token;
+
+    token = req.get_header("token");
 }
 
 
@@ -47,19 +55,14 @@ int auth::signUp(const http_request &req)
 
 int auth::signIn(const http_request &req, bool &reload_nonce, std::string &token)
 {
-    User::Permissions perm = AppDB()->getUserPermissions(std::string(req.get_digested_user()));
-    if(perm == User::NONE)
+    if(!AppDB()->isUserExist(std::string(req.get_digested_user())))
         return 1;
-
-    std::string(req.get_digested_user());
-    std::string(req.get_requestor());
-
-    if(checkPassword(req, reload_nonce)) {
+    if(!checkPassword(req, reload_nonce)) {
         return 2;
     }
 
     token = genRandomString(64);
-    AppDB()->addToken(token, std::string(req.get_digested_user()), perm);
+    AppDB()->addToken(token, std::string(req.get_digested_user()));
 
     return 0;
 }
@@ -68,13 +71,13 @@ int auth::signIn(const http_request &req, bool &reload_nonce, std::string &token
 bool auth::checkPassword(const http_request &req, bool &reload_nonce)
 {
     auto pass = AppDB()->getUserPassword(std::string(req.get_digested_user()));
-    bool check = true;
+    bool correctPass = true;
     if (!req.check_digest_auth("", *pass, 300, &reload_nonce)) {
-        check = false;
+        correctPass = false;
     }
     delete pass;
 
-    return check;
+    return correctPass;
 }
 
 std::string auth::genRandomString(const int len)
@@ -93,7 +96,7 @@ std::string auth::genRandomString(const int len)
     return tmpStr;
 }
 
-User::Permissions auth::getPermissionsByToken(std::string token)
+pair<string, User::Permissions> *auth::tokenToUserAndPermenissions(std::string token)
 {
-    return AppDB()->getPermissionsByToken(token);
+    return AppDB()->getLoginAndPermissionsByToken(token);
 }

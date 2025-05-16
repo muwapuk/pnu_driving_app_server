@@ -50,6 +50,7 @@ public:
     string *getUserName(string login);
     string *getUserPassword(string login);
     User::Permissions getUserPermissions(string login);
+    bool isUserExist(string login);
 
     vector<User> *getUsers(int startIndx, int amount);
     vector<pair<string, string>> *getUsersName(int startIndx, int amount);
@@ -68,11 +69,11 @@ public:
                      int questionNum);
 
     // Tokens table accessors
-    bool addToken(string token, string login, User::Permissions perm);
+    bool addToken(string token, string login);
     bool deleteToken(string token);
     bool deleteTokenByUser(string login);
     bool deleteTokensByTime(int time);
-    User::Permissions getPermissionsByToken(string token);
+    pair<string, User::Permissions> *getLoginAndPermissionsByToken(string token);
 
     // Groups and students_to_group tables accessors
     bool addGroup(string groupName);

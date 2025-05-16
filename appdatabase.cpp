@@ -79,8 +79,8 @@ bool AppDatabase::createTables()
             "CREATE TABLE IF NOT EXISTS tokens ("
             "token TEXT PRIMARY KEY,"
             "login TEXT,"
-            "permissions INTEGER,"
-            "time INTEGER);"
+            "time INTEGER,"
+            "FOREIGN KEY(login) REFERENCES users(login));"
         );
 
         db->exec(
@@ -337,10 +337,6 @@ std::list<Question> *AppDatabase::getTicketQuestions(Question::Category category
 
             ticket->push_back(requestedQuestion);
         }
-        if (ticket->empty()) {
-            delete ticket;
-            return nullptr;
-        }
 
         return ticket;
     } catch(std::exception &e) {
@@ -495,12 +491,34 @@ User::Permissions AppDatabase::getUserPermissions(string login)
     }
 }
 
+bool AppDatabase::isUserExist(string login)
+{
+    try {
+        SQLite::Statement query {*db, "SELECT 1 FROM users "
+                                     "WHERE login = :login"};
+        query.bind(":login", login);
+
+        bool exist = false;
+
+        if (!query.executeStep())
+            return exist;
+
+        exist = query.getColumn(0).getInt();
+
+        return exist;
+
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 vector<User> *AppDatabase::getUsers(int startIndx, int amount)
 {
     try {
         vector<User> *users = nullptr;
 
-        SQLite::Statement query {*db, "SELECT * FROM questions "
+        SQLite::Statement query {*db, "SELECT * FROM users "
                                       " WHERE rowid >= :startIndx "
                                       " AND rowid < :amount"};
         query.bind(":startIndx", startIndx);
@@ -519,10 +537,6 @@ vector<User> *AppDatabase::getUsers(int startIndx, int amount)
 
             users->push_back(requestedUser);
         }
-        if (users->empty()) {
-            delete users;
-            return nullptr;
-        }
 
         return users;
     } catch(std::exception &e) {
@@ -536,7 +550,7 @@ vector<pair<string, string>> *AppDatabase::getUsersName(int startIndx, int amoun
     try {
         vector<pair<string, string>> *users = nullptr;
 
-        SQLite::Statement query {*db, "SELECT login, name FROM questions "
+        SQLite::Statement query {*db, "SELECT login, name FROM users "
                                      " WHERE rowid >= :startIndx "
                                      " AND rowid < :amount"};
         query.bind(":startIndx", startIndx);
@@ -550,10 +564,6 @@ vector<pair<string, string>> *AppDatabase::getUsersName(int startIndx, int amoun
                 query.getColumn(0).getString(),
                 query.getColumn(1).getString()
             });
-        }
-        if (users->empty()) {
-            delete users;
-            return nullptr;
         }
 
         return users;
@@ -568,7 +578,7 @@ vector<pair<string, string>> *AppDatabase::getUsersPassword(int startIndx, int a
     try {
         vector<pair<string, string>> *users = nullptr;
 
-        SQLite::Statement query {*db, "SELECT login, password FROM questions "
+        SQLite::Statement query {*db, "SELECT login, password FROM users "
                                      " WHERE rowid >= :startIndx "
                                      " AND rowid < :amount"};
         query.bind(":startIndx", startIndx);
@@ -583,10 +593,6 @@ vector<pair<string, string>> *AppDatabase::getUsersPassword(int startIndx, int a
                 query.getColumn(1).getString()
             });
         }
-        if (users->empty()) {
-            delete users;
-            return nullptr;
-        }
 
         return users;
     } catch(std::exception &e) {
@@ -600,7 +606,7 @@ vector<pair<string, User::Permissions>> *AppDatabase::getUsersPermissions(int st
     try {
         vector<pair<string, User::Permissions>> *users = nullptr;
 
-        SQLite::Statement query {*db, "SELECT login, permissions FROM questions "
+        SQLite::Statement query {*db, "SELECT login, permissions FROM users "
                                      " WHERE rowid >= :startIndx "
                                      " AND rowid < :amount"};
         query.bind(":startIndx", startIndx);
@@ -614,10 +620,6 @@ vector<pair<string, User::Permissions>> *AppDatabase::getUsersPermissions(int st
                 query.getColumn(0).getString(),
                 static_cast<User::Permissions>(query.getColumn(1).getInt())
             });
-        }
-        if (users->empty()) {
-            delete users;
-            return nullptr;
         }
 
         return users;
@@ -701,18 +703,15 @@ bool AppDatabase::deleteError(string userLogin,
  //   "permissions INTEGER,"
   //  "time INTEGER);"
 
-bool AppDatabase::addToken(string token, string login, User::Permissions perm)
+bool AppDatabase::addToken(string token, string login)
 {
     try {
-        // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
         SQLite::Statement query {*db, "INSERT OR REPLACE INTO tokens VALUES("
-                                     "token = :token,"
-                                     "permissions = :permissions,"
-                                     "login = :login"
-                                     "time = :time)"};
+                                     ":token,"
+                                     ":login,"
+                                     ":time)"};
         query.bind(":token", token);
         query.bind(":login", login);
-        query.bind(":permissions", perm);
         query.bind(":time", time(0));
 
         if (!query.exec())
@@ -762,23 +761,24 @@ bool AppDatabase::deleteTokensByTime(int time)
     }
 }
 
-User::Permissions  AppDatabase::getPermissionsByToken(string token)
+pair<string, User::Permissions> *AppDatabase::getLoginAndPermissionsByToken(string token)
 {
     try {
-        SQLite::Statement query {*db, "SELECT permissions FROM tokens "
-                                     "WHERE token = :token"};
+        SQLite::Statement query {*db, "SELECT tokens.login, users.permissions FROM tokens "
+                                      "JOIN users ON users.login = tokens.login "
+                                      "WHERE token = :token"};
         query.bind(":token", token);
 
         if (!query.executeStep())
-            return User::NONE;
+            return nullptr;
 
-        User::Permissions perm = static_cast<User::Permissions>(query.getColumn(0).getInt());
+        auto pair = new std::pair<string, User::Permissions>(query.getColumn(0).getString(), static_cast<User::Permissions>(query.getColumn(1).getInt()));
 
-        return perm;
+        return pair;
 
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
-        return User::NONE;
+        return nullptr;
     }
 }
 
@@ -869,15 +869,10 @@ vector<string> *AppDatabase::getGroupStudentsLogins(string groupName)
 
         vector<string> *students = nullptr;
 
-        students = new vector<string>;
+        students = new vector<string>{};
 
         while (query.executeStep()) {
             students->push_back(query.getColumn(0).getString());
-        }
-
-        if (students->empty()) {
-            delete students;
-            students = nullptr;
         }
 
         return students;
@@ -899,16 +894,12 @@ vector<string> *AppDatabase::getGroupStudentsNames(string groupName)
 
         vector<string> *students = nullptr;
 
-        students = new vector<string>;
+        students = new vector<string>{};
 
         while (query.executeStep()) {
             students->push_back(query.getColumn(0).getString());
         }
 
-        if (students->empty()) {
-            delete students;
-            students = nullptr;
-        }
 
         return students;
 
@@ -967,7 +958,7 @@ vector<Lecture> *AppDatabase::getLectures()
     try {
         SQLite::Statement query {*db, "SELECT * FROM lectures"};
 
-        vector<Lecture> *lectures = new vector<Lecture>;
+        vector<Lecture> *lectures = new vector<Lecture>{};
 
         while (query.executeStep()) {
             lectures->push_back(Lecture {
@@ -979,10 +970,6 @@ vector<Lecture> *AppDatabase::getLectures()
             });
         }
 
-        if (lectures->empty()) {
-            delete lectures;
-            lectures = nullptr;
-        }
 
         return lectures;
 
@@ -999,7 +986,7 @@ vector<Lecture> *AppDatabase::getLecturesByGroup(string group)
                                      "WHERE group_name = :group_name"};
         query.bind(":group_name", group);
 
-        vector<Lecture> *lectures = new vector<Lecture>;
+        vector<Lecture> *lectures = new vector<Lecture>{};
 
         while (query.executeStep()) {
             lectures->push_back(Lecture {
@@ -1009,11 +996,6 @@ vector<Lecture> *AppDatabase::getLecturesByGroup(string group)
                 query.getColumn(3).getString(),
                 DBDate(query.getColumn(4).getString()),
             });
-        }
-
-        if (lectures->empty()) {
-            delete lectures;
-            lectures = nullptr;
         }
 
         return lectures;
@@ -1031,7 +1013,7 @@ vector<Lecture> *AppDatabase::getLecturesByTeacher(string teacherName)
                                       "WHERE teacher_name = :teacher_name"};
         query.bind(":teacher_name", teacherName);
 
-        vector<Lecture> *lectures = new vector<Lecture>;
+        vector<Lecture> *lectures = new vector<Lecture>{};
 
         while (query.executeStep()) {
             lectures->push_back(Lecture {
@@ -1041,11 +1023,6 @@ vector<Lecture> *AppDatabase::getLecturesByTeacher(string teacherName)
                 query.getColumn(3).getString(),
                 DBDate(query.getColumn(4).getString()),
             });
-        }
-
-        if (lectures->empty()) {
-            delete lectures;
-            lectures = nullptr;
         }
 
         return lectures;
@@ -1103,7 +1080,7 @@ vector<Practice> *AppDatabase::getPractices()
     try {
         SQLite::Statement query {*db, "SELECT * FROM practices"};
 
-        vector<Practice> *practice = new vector<Practice>;
+        vector<Practice> *practice = new vector<Practice>{};
 
         while (query.executeStep()) {
             practice->push_back(Practice {
@@ -1113,11 +1090,6 @@ vector<Practice> *AppDatabase::getPractices()
                 query.getColumn(3).getString(),
                 DBDate(query.getColumn(4).getString()),
             });
-        }
-
-        if (practice->empty()) {
-            delete practice;
-            practice = nullptr;
         }
 
         return practice;
@@ -1135,7 +1107,7 @@ vector<Practice> *AppDatabase::getPracticesByStudent(string studentName)
                                       "WHERE student_name = :student_name"};
         query.bind(":student_name", studentName);
 
-        vector<Practice> *practice = new vector<Practice>;
+        vector<Practice> *practice = new vector<Practice>{};
 
         while (query.executeStep()) {
             practice->push_back(Practice {
@@ -1145,11 +1117,6 @@ vector<Practice> *AppDatabase::getPracticesByStudent(string studentName)
                 query.getColumn(3).getString(),
                 DBDate(query.getColumn(4).getString()),
             });
-        }
-
-        if (practice->empty()) {
-            delete practice;
-            practice = nullptr;
         }
 
         return practice;
@@ -1167,7 +1134,7 @@ vector<Practice> *AppDatabase::getPracticesByTeacher(string teacherName)
                                      "WHERE teacher_name = :teacher_name"};
         query.bind(":teacher_name", teacherName);
 
-        vector<Practice> *practice = new vector<Practice>;
+        vector<Practice> *practice = new vector<Practice>{};
 
         while (query.executeStep()) {
             practice->push_back(Practice {
@@ -1177,11 +1144,6 @@ vector<Practice> *AppDatabase::getPracticesByTeacher(string teacherName)
                 query.getColumn(3).getString(),
                 DBDate(query.getColumn(4).getString()),
             });
-        }
-
-        if (practice->empty()) {
-            delete practice;
-            practice = nullptr;
         }
 
         return practice;
