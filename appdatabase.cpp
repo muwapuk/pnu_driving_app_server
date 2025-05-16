@@ -76,14 +76,13 @@ bool AppDatabase::createTables()
         );
 
         db->exec(
-            "CREATE TABLE IF NOT EXISTS remembered_users ("
-            "user_login TEXT PRIMARY KEY,"
-            "ip TEXT,"
-            "FOREIGN KEY(user_login) REFERENCES users(login),"
-            "UNIQUE(user_login, ip));"
+            "CREATE TABLE IF NOT EXISTS tokens ("
+            "token TEXT PRIMARY KEY,"
+            "login TEXT,"
+            "permissions INTEGER,"
+            "time INTEGER);"
         );
 
-        /// NOT IMPLEMENTED ///
         db->exec(
             "CREATE TABLE IF NOT EXISTS groups ("
             "name TEXT PRIMARY KEY);"
@@ -476,25 +475,23 @@ string *AppDatabase::getUserName(string login)
     }
 }
 
-User::Permissions *AppDatabase::getUserPermissions(string login)
+User::Permissions AppDatabase::getUserPermissions(string login)
 {
     try {
         SQLite::Statement query {*db, "SELECT permissions FROM users "
                                      "WHERE login = :login"};
         query.bind(":login", login);
 
-        User::Permissions *perm = nullptr;
-        if (!query.executeStep())
-            return perm;
 
-        perm = new User::Permissions;
-        *perm = static_cast<User::Permissions>(query.getColumn(0).getInt());
+        if (!query.executeStep())
+            return User::NONE;
+        User::Permissions perm = static_cast<User::Permissions>(query.getColumn(0).getInt());
 
         return perm;
 
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
-        return nullptr;
+        return User::NONE;
     }
 }
 
@@ -699,15 +696,24 @@ bool AppDatabase::deleteError(string userLogin,
     }
 }
 
-bool AppDatabase::addRememberedUser(string login, string ip)
+//"CREATE TABLE IF NOT EXISTS tokens ("
+ //   "token TEXT PRIMARY KEY,"
+ //   "permissions INTEGER,"
+  //  "time INTEGER);"
+
+bool AppDatabase::addToken(string token, string login, User::Permissions perm)
 {
     try {
         // SQLite::Statement query {*db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
-        SQLite::Statement query {*db, "INSERT OR REPLACE INTO remembered_users VALUES("
-                                     "user_login = :user_login,"
-                                     "user_ip = :user_ip)"};
-        query.bind(":user_login", login);
-        query.bind(":user_ip", ip);
+        SQLite::Statement query {*db, "INSERT OR REPLACE INTO tokens VALUES("
+                                     "token = :token,"
+                                     "permissions = :permissions,"
+                                     "login = :login"
+                                     "time = :time)"};
+        query.bind(":token", token);
+        query.bind(":login", login);
+        query.bind(":permissions", perm);
+        query.bind(":time", time(0));
 
         if (!query.exec())
             return false;
@@ -720,12 +726,12 @@ bool AppDatabase::addRememberedUser(string login, string ip)
     }
 }
 
-bool AppDatabase::deleteRememberedUser(string login)
+bool AppDatabase::deleteToken(string token)
 {
     try {
-        SQLite::Statement query {*db, string("DELETE FROM remembered_users "
-                                                 "WHERE user_login = :user_login")};
-        query.bind(":user_login", login);
+        SQLite::Statement query {*db, string("DELETE FROM tokens "
+                                            "WHERE token = :token")};
+        query.bind(":token", token);
 
         if (!query.exec())
             return false;
@@ -738,24 +744,41 @@ bool AppDatabase::deleteRememberedUser(string login)
     }
 }
 
-string *AppDatabase::getUserIp(string login)
+bool AppDatabase::deleteTokensByTime(int time)
 {
     try {
-        SQLite::Statement query {*db, "SELECT ip FROM remembered_users "
-                                      "WHERE user_login = :user_login"};
-        query.bind(":user_login", login);
+        SQLite::Statement query {*db, string("DELETE FROM tokens "
+                                            "WHERE time < :time")};
+        query.bind(":time", time);
+
+        if (!query.exec())
+            return false;
+
+        return true;
+
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool AppDatabase::getPermissionsByToken(string token)
+{
+    try {
+        SQLite::Statement query {*db, "SELECT permissions FROM tokens "
+                                     "WHERE token = :token"};
+        query.bind(":token", token);
 
         if (!query.executeStep())
-            return nullptr;
+            return User::NONE;
 
-        string *ip = new string;
-        *ip = query.getColumn(0).getString();
+        User::Permissions perm = static_cast<User::Permissions>(query.getColumn(0).getInt());
 
-        return ip;
+        return perm;
 
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
-        return nullptr;
+        return User::NONE;
     }
 }
 

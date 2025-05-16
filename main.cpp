@@ -1,6 +1,9 @@
 #include "jsonconverter.h"
 #include "questions_resources.h"
 
+#include <iostream>
+#include <ctime>
+
 
 void register_resources(webserver &server)
 {
@@ -14,43 +17,9 @@ int main(int, char**)
 {
     webserver ws = create_webserver(8080);
     ///
-    auto u1 = User {
-        "a","a","a",User::student
-    };
-    auto u2 = User {
-        "b","b","b",User::student
-    };
-
-    Lecture lec {
-        "aboba",
-        "gr",
-        "theme",
-        "202k",
-        DBDate("2025-11-11 10:10")
-    };
-    Practice prac {
-        "aboba1",
-        "aboba2",
-        "theme",
-        "car",
-        DBDate("2025-11-11 10:10")
-    };
 
 
-
-    nlohmann::json j1, j2, j3;
-    j3 = {};
-
-    JsonConverter::userToJson(u1, j1);
-    JsonConverter::userToJson(u2, j2);
-
-    j3.push_back(j1);
-    j3.push_back(j2);
-
-    std::string str;
-    JsonConverter::jsonToJsonString(j3, str);
-
-
+    std::cout << time(0) << std::endl;
 
     ///
     qr::questions_resource questions_src;

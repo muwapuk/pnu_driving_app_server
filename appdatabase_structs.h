@@ -33,10 +33,11 @@ struct User {
     std::string password;
     std::string name;
     enum Permissions {
-        superuser,
-        teacher,
-        student,
-    } permissions = student;
+        NONE,
+        SUPERUSER,
+        TEACHER,
+        STUDENT,
+    } permissions = NONE;
 };
 
 struct DBDate {

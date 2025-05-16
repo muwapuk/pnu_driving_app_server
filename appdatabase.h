@@ -49,7 +49,7 @@ public:
     User *getUser(string login);
     string *getUserName(string login);
     string *getUserPassword(string login);
-    User::Permissions *getUserPermissions(string login);
+    User::Permissions getUserPermissions(string login);
 
     vector<User> *getUsers(int startIndx, int amount);
     vector<pair<string, string>> *getUsersName(int startIndx, int amount);
@@ -67,12 +67,11 @@ public:
                      int ticketNum,
                      int questionNum);
 
-    // Remembered users table accessors
-    bool addRememberedUser(string login, string ip);
-    bool deleteRememberedUser(string login);
-    string *getUserIp(string login);
-
-    // NOT TESTED
+    // Tokens table accessors
+    bool addToken(string token, string login, User::Permissions perm);
+    bool deleteToken(string token);
+    bool deleteTokensByTime(int time);
+    bool getPermissionsByToken(string token);
 
     // Groups and students_to_group tables accessors
     bool addGroup(string groupName);
