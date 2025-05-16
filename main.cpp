@@ -1,15 +1,12 @@
 #include "jsonconverter.h"
 #include "questions_resources.h"
-
 #include <iostream>
 #include <ctime>
 
 
 void register_resources(webserver &server)
 {
-    qr::questions_resource hwr;
 
-    server.register_resource("/questions/category/{category}/ticket/{ticket|[0-9]+}/question/{question|[0-9]+}", &hwr);
 }
 
 

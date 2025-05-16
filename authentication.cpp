@@ -9,15 +9,14 @@ std::shared_ptr<http_response> auth::authorization_resource::render_POST(const h
     int signResult = signIn(req, reload_nonce, token);
 
     if (signResult == 1) {
-        return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("FAIL", "", MY_OPAQUE, true));
+        return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("User not found", "", MY_OPAQUE, true));
     }
-    else {
-
-        if(!req.check_digest_auth("test@example.com", "mypass", 300, reload_nonce)) {
-            return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("FAIL", "test@example.com", MY_OPAQUE, reload_nonce));
-        }
+    if(signResult == 2) {
+        return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("Incorrect password", "", MY_OPAQUE, reload_nonce));
     }
-    return std::shared_ptr<string_response>(new string_response("SUCCESS", 200, "text/plain"));
+    auto responce = std::shared_ptr<string_response>(new string_response("SUCCESS", 200, "text/plain"));
+    responce->with_header("token", token);
+    return responce;
 }
 
 
@@ -64,7 +63,6 @@ int auth::signIn(const http_request &req, bool &reload_nonce, std::string &token
 
     return 0;
 }
-
 
 
 bool auth::checkPassword(const http_request &req, bool &reload_nonce)

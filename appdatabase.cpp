@@ -762,7 +762,7 @@ bool AppDatabase::deleteTokensByTime(int time)
     }
 }
 
-bool AppDatabase::getPermissionsByToken(string token)
+User::Permissions  AppDatabase::getPermissionsByToken(string token)
 {
     try {
         SQLite::Statement query {*db, "SELECT permissions FROM tokens "

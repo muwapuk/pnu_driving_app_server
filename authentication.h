@@ -9,6 +9,10 @@ using namespace httpserver;
 
 namespace auth {
 
+class authorization_resource : public httpserver::http_resource {
+public:
+    std::shared_ptr<http_response> render_POST(const http_request& req);
+};
 
 std::string genRandomString(const int len);
 
@@ -31,17 +35,12 @@ int signUp(const http_request &req);
 ///
 int signIn(const http_request &req, bool &reload_nonce, std::string &token);
 
-///
-/// signOut - removes user ip from remembered
-/// req - request
-/// return:
-///
 
 bool checkPassword(const http_request &req, bool &reload_nonce);
 
 User::Permissions getPermissionsByToken(std::string token);
 
-}
+} // namespace end
 
 /*
     bool reload_nonce = false;

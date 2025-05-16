@@ -70,8 +70,9 @@ public:
     // Tokens table accessors
     bool addToken(string token, string login, User::Permissions perm);
     bool deleteToken(string token);
+    bool deleteTokenByUser(string login);
     bool deleteTokensByTime(int time);
-    bool getPermissionsByToken(string token);
+    User::Permissions getPermissionsByToken(string token);
 
     // Groups and students_to_group tables accessors
     bool addGroup(string groupName);
@@ -81,8 +82,6 @@ public:
     vector<string> *getGroupStudentsLogins(string groupName);
     vector<string> *getGroupStudentsNames(string groupName);
 
-    // NOT IMPLEMENTED
-
     // Lectures table accessors
     int addLecture(Lecture &);
     bool deleteLecture(string teacherName, string date);
@@ -90,6 +89,7 @@ public:
     vector<Lecture> *getLecturesByGroup(string group);
     vector<Lecture> *getLecturesByTeacher(string teacherName);
 
+    // Practices table accessors
     int addPractice(Practice &);
     bool deletePractice(string teacherName, string date);
     vector<Practice> *getPractices();
