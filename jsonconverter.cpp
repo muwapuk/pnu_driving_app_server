@@ -68,6 +68,7 @@ JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question 
     if (!j["category"].is_number()
      || !j["ticketNum"].is_number()
      || !j["questionNum"].is_number()
+     || !j["theme"].is_string()
      || !j["image"].is_string()
      || !j["questionText"].is_string()
      || !j["answers"].is_string()
@@ -78,6 +79,7 @@ JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question 
     j["category"].get_to(question.category);
     j["ticketNum"].get_to(question.ticket_num);
     j["questionNum"].get_to(question.question_num);
+    j["theme"].get_to(question.theme);
     j["image"].get_to(question.image_base64);
     j["questionText"].get_to(question.question_text);
     j["answers"].get_to(question.answers);
@@ -93,6 +95,7 @@ JsonConverter::Result JsonConverter::questionToJson(const Question &question, nl
         {"category", question.category},
         {"ticketNum", question.ticket_num},
         {"questionNum", question.question_num},
+        {"theme", question.theme},
         {"image", question.image_base64},
         {"questionText", question.question_text},
         {"answers", question.answers},
@@ -136,22 +139,19 @@ JsonConverter::Result JsonConverter::userToJson(const User &user, nlohmann::json
 
 JsonConverter::Result JsonConverter::jsonToLecture(nlohmann::json &j, Lecture &lecture)
 {
-    if (!j["teacher_name"].is_string()
+    if (!j["teacher_login"].is_string()
         || !j["group_name"].is_string()
         || !j["thematic"].is_string()
         || !j["cabinet"].is_number()
         || !j["date"].is_number()
         ) return CONVERTATION_ERROR;
 
-    j["teacher_name"].get_to(lecture.teacher_name);
+    j["teacher_login"].get_to(lecture.teacher_login);
     j["group_name"].get_to(lecture.group_name);
     j["thematic"].get_to(lecture.thematic);
     j["cabinet"].get_to(lecture.cabinet);
+    j["date"].get_to(lecture.date);
 
-    std::string datestr;
-    j["date"].get_to(datestr);
-    if (!lecture.date.loadFromString(datestr))
-        return PARSE_ERROR;
 
     return SUCCESS;
 }
@@ -159,11 +159,11 @@ JsonConverter::Result JsonConverter::jsonToLecture(nlohmann::json &j, Lecture &l
 JsonConverter::Result JsonConverter::lectureToJson(Lecture &lecture, nlohmann::json &j)
 {
     json lectureJson = {
-        {"login", lecture.teacher_name},
-        {"password", lecture.group_name},
-        {"name", lecture.thematic},
-        {"permissions", lecture.cabinet},
-        {"permissions", lecture.date.getDateString()}
+        {"teacher_login", lecture.teacher_login},
+        {"group_name", lecture.group_name},
+        {"thematic", lecture.thematic},
+        {"cabinet", lecture.cabinet},
+        {"date", lecture.date}
     };
 
     j.merge_patch(lectureJson);
@@ -173,22 +173,18 @@ JsonConverter::Result JsonConverter::lectureToJson(Lecture &lecture, nlohmann::j
 
 JsonConverter::Result JsonConverter::jsonToPractice(nlohmann::json &j, Practice &practice)
 {
-    if (!j["teacher_name"].is_string()
-        || !j["student_name"].is_string()
+    if (!j["teacher_login"].is_string()
+        || !j["student_login"].is_string()
         || !j["thematic"].is_string()
         || !j["car"].is_number()
         || !j["date"].is_number()
         ) return CONVERTATION_ERROR;
 
-    j["teacher_name"].get_to(practice.teacher_name);
-    j["student_name"].get_to(practice.student_name);
+    j["teacher_login"].get_to(practice.teacher_login);
+    j["student_login"].get_to(practice.student_login);
     j["thematic"].get_to(practice.thematic);
     j["car"].get_to(practice.car);
-
-    std::string datestr;
-    j["date"].get_to(datestr);
-    if (!practice.date.loadFromString(datestr))
-        return PARSE_ERROR;
+    j["date"].get_to(practice.date);
 
     return SUCCESS;
 }
@@ -196,11 +192,11 @@ JsonConverter::Result JsonConverter::jsonToPractice(nlohmann::json &j, Practice 
 JsonConverter::Result JsonConverter::practiceToJson(Practice &practice, nlohmann::json &j)
 {
     json lectureJson = {
-        {"teacher_name", practice.teacher_name},
-        {"student_name", practice.student_name},
+        {"teacher_login", practice.teacher_login},
+        {"student_login", practice.student_login},
         {"thematic", practice.thematic},
         {"car", practice.car},
-        {"date", practice.date.getDateString()}
+        {"date", practice.date}
     };
 
     j.merge_patch(lectureJson);

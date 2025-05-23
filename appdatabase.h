@@ -25,6 +25,7 @@ class AppDatabase
     // Counts tickets amount from different categories and moves result into specific variables
     void countTickets();
 
+    bool decreaseQuestionId(int id);
 public:
     // Singleton preparation
     static AppDatabase *getInstance(string databaseName = "data.db3");
@@ -39,6 +40,10 @@ public:
     bool addQuestion(Question &);
     bool modifyQuestion(Question &);
     bool deleteQuestion(Question::Category, int ticketNum, int questionNum);
+    int getTicketQuestionsAmount(Question::Category, int ticketNum);
+    int getThemeQuestionsAmount(string theme);
+    vector<string> *getQuestionsThemes(); //////////////////////////////
+    vector<int> *getQuestionsIdsByTheme(string theme);
     Question *getQuestion(Question::Category, int ticketNum, int questionNum);
     std::list<Question> *getTicketQuestions(Question::Category, int ticketNum);
 
@@ -73,7 +78,7 @@ public:
     bool deleteToken(string token);
     bool deleteTokenByUser(string login);
     bool deleteTokensByTime(int time);
-    pair<string, User::Permissions> *getLoginAndPermissionsByToken(string token);
+    std::shared_ptr<pair<string, User::Permissions>> getLoginAndPermissionsByToken(string token);
 
     // Groups and students_to_group tables accessors
     bool addGroup(string groupName);
@@ -84,18 +89,28 @@ public:
     vector<string> *getGroupStudentsNames(string groupName);
 
     // Lectures table accessors
-    int addLecture(Lecture &);
-    bool deleteLecture(string teacherName, string date);
+    bool addLecture(Lecture &);
+    bool deleteLecture(string teacherLogin, int date);
     vector<Lecture> *getLectures();
     vector<Lecture> *getLecturesByGroup(string group);
-    vector<Lecture> *getLecturesByTeacher(string teacherName);
+    vector<Lecture> *getLecturesByTeacher(string teacherLogin);
+
+    // Students_to_instructors table accessors
+    bool addStudentsToInstructorsLink(string studentLogin, string teacherLogin);
+    bool deleteStudentsToInstructorsLink(string studentLogin, string teacherLogin);
+    std::string *getStudentsInstructorLogin(string studentLogin);
+    vector<std::string> *getInstructorsStudentsLogins(string teacherLogin);
 
     // Practices table accessors
-    int addPractice(Practice &);
-    bool deletePractice(string teacherName, string date);
+    bool addPractice(Practice &);
+    bool changePractice(Practice &);
+    bool deletePractice(string teacherLogin, int date);
+    Practice *getPractice(string teacherLogin, int date);
     vector<Practice> *getPractices();
-    vector<Practice> *getPracticesByStudent(string studentName);
-    vector<Practice> *getPracticesByTeacher(string teacherName);
+    vector<Practice> *getPracticesByStudent(string studentLogin);
+    vector<Practice> *getPracticesByUserInstructor(string studentLogin);
+    vector<Practice> *getPracticesByTeacher(string teacherLogin);
+    vector<Practice> *getPracticesByTime(int fromTime, int toTime);
 
 
 private:

@@ -3,7 +3,7 @@
 #include "authentication_resourses.h"
 #include "jsonconverter.h"
 
-#define HEADER_RESPONCE
+#define HEADER_RESPONSE
 
 using json = nlohmann::json;
 using namespace ur;
@@ -34,13 +34,13 @@ std::shared_ptr<http_response> users_resources::getUser(std::string login)
 
     delete user;
 
-    auto responce = std::shared_ptr<string_response>(new string_response("SUCCESS"));
-#ifdef HEADER_RESPONCE
-    responce->with_header("user", userString);
+    auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
+#ifdef HEADER_RESPONSE
+    response->with_header("user", userString);
 #else
-    responce->with_footer("user", userString);
+    response->with_footer("user", userString);
 #endif
-    return responce;
+    return response;
 }
 
 std::shared_ptr<http_response> users_resources::getUsersPage(int page)
@@ -58,15 +58,15 @@ std::shared_ptr<http_response> users_resources::getUsersPage(int page)
 
     delete users;
 
-    auto responce = std::shared_ptr<string_response>(new string_response("SUCCESS"));
+    auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
 
-#ifdef HEADER_RESPONCE
-    responce->with_header("users", userArrayString);
+#ifdef HEADER_RESPONSE
+    response->with_header("users", userArrayString);
 #else
-    responce->with_footer("users", userArrayString);
+    response->with_footer("users", userArrayString);
 #endif
 
-    return responce;
+    return response;
 }
 
 std::shared_ptr<http_response> users_resources::getUserAttribute(std::string login, UserAttributes attribute)
@@ -90,14 +90,14 @@ std::shared_ptr<http_response> users_resources::getUserAttribute(std::string log
     }
     JsonConverter::jsonToJsonString(j_response, userString);
 
-    auto responce = std::shared_ptr<string_response>(new string_response("SUCCESS"));
+    auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
 
-#ifdef HEADER_RESPONCE
-    responce->with_header("user", userString);
+#ifdef HEADER_RESPONSE
+    response->with_header("user", userString);
 #else
-    responce->with_footer("user", userString);
+    response->with_footer("user", userString);
 #endif
-    return responce;
+    return response;
 }
 
 std::shared_ptr<http_response> users_resources::getUsersAttributesPage(UserAttributes attribute, int page)
@@ -124,14 +124,15 @@ std::shared_ptr<http_response> users_resources::getUsersAttributesPage(UserAttri
     }
     JsonConverter::jsonToJsonString(j_userArray, userArrayString);
 
-    auto responce = std::shared_ptr<string_response>(new string_response("SUCCESS"));
+    auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
 
-#ifdef HEADER_RESPONCE
-    responce->with_header("users", userArrayString);
+#ifdef HEADER_RESPONSE
+    response->with_header("users", userArrayString);
 #else
-    responce->with_footer("users", userArrayString);
+    response->with_footer("users", u
+                                       serArrayString);
 #endif
-    return responce;
+    return response;
 }
 
 ////////////////////
@@ -190,12 +191,12 @@ std::shared_ptr<http_response> users_resources::render_GET(const http_request &r
     return response;
 }
 
-std::shared_ptr<http_response> users_resources::render_PUT(const http_request &req)
+std::shared_ptr<http_response> users_resources::render_PATCH(const http_request &req)
 {
 
 }
 
-std::shared_ptr<http_response> users_resources::render(const http_request &req)
+std::shared_ptr<http_response> users_resources::render(const http_request &)
 {
-
+    return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
 }

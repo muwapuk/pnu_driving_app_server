@@ -19,8 +19,9 @@ struct Question {
 
     uint ticket_num;
     uint question_num;
-    // In database it has unique id consisting of (ticket_num + question_num*100)*10 + category
+    // In database it has unique id consisting of question_num*1000 + ticket_num*10 + category
 
+    std::string theme;
     std::string image_base64;
     std::string question_text;
     std::string answers;
@@ -40,72 +41,22 @@ struct User {
     } permissions = NONE;
 };
 
-struct DBDate {
-    DBDate() {}
-    DBDate(std::string strDate)
-    {
-        this->loadFromString(strDate);
-    }
 
-    int year;
-    int month;
-    int day;
-
-    int hour;
-    int min;
-
-    bool initialized = false;
-
-    ///
-    /// \brief loadFromString
-    /// \param date in format "YYYY-MM-DD hh:mm"
-    /// \return true if parsed
-    ///
-    bool loadFromString(std::string date)
-    {
-        // Date: "YYYY-MM-DD hh:mm"
-        try {
-            year = stoi(date.substr(0,4));
-            month = stoi(date.substr(5,2));
-            day = stoi(date.substr(8,2));
-
-            hour = stoi(date.substr(11,2));
-            min = stoi(date.substr(14,2));
-        } catch(std::exception &e) {
-            return false;
-        }
-        initialized = true;
-        return true;
-    }
-    std::string getDateString()
-    {
-        if (!initialized) {
-            return "";
-        }
-        return std::string(
-            std::to_string(year).insert(0, 4-((int)log10((double)year)+1), '0') + '-' +
-            std::to_string(month).insert(0, 2-((int)log10((double)month)+1), '0') + '-' +
-            std::to_string(day).insert(0, 2-((int)log10((double)day)+1), '0') + ' ' +
-            std::to_string(hour).insert(0, 2-((int)log10((double)hour)+1), '0') + ':' +
-            std::to_string(min).insert(0, 2-((int)log10((double)min)+1), '0')
-        );
-    }
-};
 
 struct Lecture {
-    std::string teacher_name;
+    std::string teacher_login;
     std::string group_name;
     std::string thematic;
     std::string cabinet;
-    DBDate date;
+    int date;
 };
 
 struct Practice {
-    std::string teacher_name;
-    std::string student_name;
+    std::string teacher_login;
+    std::string student_login;
     std::string thematic;
     std::string car;
-    DBDate date;
+    int date;
 };
 
 

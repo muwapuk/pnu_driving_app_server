@@ -1,6 +1,7 @@
 #ifndef AUTHENTICATION_RESOURSES_H
 #define AUTHENTICATION_RESOURSES_H
 
+#include "appdatabase.h"
 #include <httpserver.hpp>
 #include <appdatabase_structs.h>
 using namespace httpserver;
@@ -43,14 +44,9 @@ int signIn(const http_request &req, bool &reload_nonce, std::string &token);
 
 bool checkPassword(const http_request &req, bool &reload_nonce);
 
-std::pair<std::string, User::Permissions> *tokenToUserAndPermenissions(std::string token);
+std::shared_ptr<pair<string, User::Permissions>> tokenToUserAndPermenissions(std::string token);
 
 } // namespace end
 
-/*
-    bool reload_nonce = false;
-    if (authenticate(req, reload_nonce))
-        return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("FAIL", "", MY_OPAQUE, reload_nonce));
-*/
 
 #endif // AUTHENTICATION_RESOURSES_H
