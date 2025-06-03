@@ -62,7 +62,7 @@ questions_resource::render_GET(const http_request &req)
         if (!req.get_arg("theme").values.empty()) {
             if(req.get_path_piece(4) == "ids" ) {
                 json j_response = {};
-                vector<int> *ids = AppDB()->getQuestionsIdsByTheme(req.get_arg("theme"));
+                vector<int> *ids = AppDB().getQuestionsIdsByTheme(req.get_arg("theme"));
                 for (auto &id : *ids) {
                     json j_response;
                     j_response.push_back(id);
@@ -74,7 +74,7 @@ questions_resource::render_GET(const http_request &req)
                 response->with_header("ids", s_response);
                 return response;
             } else if (req.get_path_piece(4) == "amount") {
-                int amount = AppDB()->getThemeQuestionsAmount(req.get_arg("theme"));
+                int amount = AppDB().getThemeQuestionsAmount(req.get_arg("theme"));
                 auto response = std::shared_ptr<http_response>(new string_response("SUCCESS"));
                 response->with_header("questions-amount", std::to_string(amount));
                 return response;
@@ -83,7 +83,7 @@ questions_resource::render_GET(const http_request &req)
             }
         } else {
             json j_response = {};
-            vector<string> *themes = AppDB()->getQuestionsThemes();
+            vector<string> *themes = AppDB().getQuestionsThemes();
             for (auto &theme : *themes) {
                 json j_response;
                 j_response.push_back(theme);
@@ -99,7 +99,7 @@ questions_resource::render_GET(const http_request &req)
 
     if (!req.get_arg("category").values.empty()
       && req.get_path_piece(4) == "amount") {
-        int ticketsAmount = AppDB()->getTicketsABamount();
+        int ticketsAmount = AppDB().getTicketsABamount();
         auto response = std::shared_ptr<http_response>(new string_response("SUCCESS"));
         response->with_header("tickets-amount", std::to_string(ticketsAmount));
         return response;
@@ -109,7 +109,7 @@ questions_resource::render_GET(const http_request &req)
       && req.get_path_piece(6) == "amount") {
         auto category = categories_strings[std::string(req.get_arg("category"))];
         int ticketNum = std::stoi(std::string(req.get_arg("ticket")));
-        int ticketsAmount = AppDB()->getTicketQuestionsAmount(category, ticketNum);
+        int ticketsAmount = AppDB().getTicketQuestionsAmount(category, ticketNum);
         auto response = std::shared_ptr<http_response>(new string_response("SUCCESS"));
         response->with_header("questions-amount", std::to_string(ticketsAmount));
         return response;
@@ -128,11 +128,11 @@ questions_resource::render_GET(const http_request &req)
 
     switch (category) {
     case Question::AB:
-        if (ticket_num > AppDB()->getTicketsABamount() || ticket_num < 1)
+        if (ticket_num > AppDB().getTicketsABamount() || ticket_num < 1)
             return std::shared_ptr<http_response>(new string_response("Ticket not found!", 404));
         break;
     case Question::CD:
-        if (ticket_num > AppDB()->getTicketsCDamount() || ticket_num < 1)
+        if (ticket_num > AppDB().getTicketsCDamount() || ticket_num < 1)
             return std::shared_ptr<http_response>(new string_response("Ticket not found!", 404));
         break;
     case Question::UNDEFINED:
@@ -142,7 +142,7 @@ questions_resource::render_GET(const http_request &req)
     }
 
     Question *question;
-    if(!(question = AppDB()->getQuestion(category, ticket_num, question_num))) {
+    if(!(question = AppDB().getQuestion(category, ticket_num, question_num))) {
         return std::shared_ptr<http_response>(new string_response("Question not found!", 404));
     }
     json questJson;
@@ -209,7 +209,7 @@ questions_resource::render_PUT(const http_request &req)
     if(JsonConverter::SUCCESS != JsonConverter::jsonToQuestion(jsonQuest, question))
         return std::shared_ptr<http_response>(new string_response("JSON struct does not match question struct!", 400));
 
-    if(!AppDB()->addQuestion(question))
+    if(!AppDB().addQuestion(question))
         return std::shared_ptr<http_response>(new string_response("Could not add the question!", 500));
 
     return std::shared_ptr<http_response>(new string_response("SUCCESS"));
@@ -240,11 +240,11 @@ questions_resource::render_DELETE(const http_request &req)
     // Check args match bounds
     switch (category) {
     case Question::AB:
-        if (ticket_num > AppDB()->getTicketsABamount() || ticket_num < 1)
+        if (ticket_num > AppDB().getTicketsABamount() || ticket_num < 1)
             return std::shared_ptr<http_response>(new string_response("Ticket not found!", 404));
         break;
     case Question::CD:
-        if (ticket_num > AppDB()->getTicketsCDamount() || ticket_num < 1)
+        if (ticket_num > AppDB().getTicketsCDamount() || ticket_num < 1)
             return std::shared_ptr<http_response>(new string_response("Ticket not found!", 404));
         break;
     case Question::UNDEFINED:
@@ -253,7 +253,7 @@ questions_resource::render_DELETE(const http_request &req)
         break;
     }
 
-    if(!(AppDB()->deleteQuestion(category, ticket_num, question_num))) {
+    if(!(AppDB().deleteQuestion(category, ticket_num, question_num))) {
         return std::shared_ptr<http_response>(new string_response("Question not found!", 404));
     }
 
@@ -289,11 +289,11 @@ questions_resource::render_PATCH(const http_request &req)
     // Check args match bounds
     switch (category) {
     case Question::AB:
-        if (ticket_num > AppDB()->getTicketsABamount() || ticket_num < 1)
+        if (ticket_num > AppDB().getTicketsABamount() || ticket_num < 1)
             return std::shared_ptr<http_response>(new string_response("Ticket not found!", 404));
         break;
     case Question::CD:
-        if (ticket_num > AppDB()->getTicketsCDamount() || ticket_num < 1)
+        if (ticket_num > AppDB().getTicketsCDamount() || ticket_num < 1)
             return std::shared_ptr<http_response>(new string_response("Ticket not found!", 404));
         break;
     case Question::UNDEFINED:
@@ -307,7 +307,7 @@ questions_resource::render_PATCH(const http_request &req)
             static_cast<std::string>(req.get_content()), jsonPatch)
     ) return std::shared_ptr<http_response>(new string_response("Bad JSON!", 400));
 
-    if(!(question = AppDB()->getQuestion(category, ticket_num, question_num))) {
+    if(!(question = AppDB().getQuestion(category, ticket_num, question_num))) {
         return std::shared_ptr<http_response>(new string_response("Question not found!", 404));
     }
 
@@ -315,7 +315,7 @@ questions_resource::render_PATCH(const http_request &req)
     JsonConverter::mergeJson(jsonQuest, jsonPatch);
     JsonConverter::jsonToQuestion(jsonQuest, *question);
 
-    AppDB()->modifyQuestion(*question);
+    AppDB().modifyQuestion(*question);
 
     delete question;
     return std::shared_ptr<http_response>(new string_response("SUCCESS"));

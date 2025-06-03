@@ -5,30 +5,26 @@
 #include <string>
 #include <sys/types.h>
 
+namespace tickets {
+enum Categories {
+    AB,
+    CD,
+};
+}
+
 struct Question {
-    static const int MIN_TICKET_NUM = 1;
-    static const int MAX_TICKET_NUM = 99;
     static const int MIN_QUESTION_NUM = 1;
 
-    enum Category {
-        UNDEFINED,
-        AB,
-        CD,
-        TOTAL_CATEGORIES
-    } category;
+    uint number;
+    uint ticketId;
 
-    uint ticket_num;
-    uint question_num;
-    // In database it has unique id consisting of question_num*1000 + ticket_num*10 + category
-
-    std::string theme;
+    std::string subject;
     std::string image_base64;
-    std::string question_text;
+    std::string questionText;
     std::string answers;
     std::string comment;
     uint rightAnswer;
 };
-
 struct User {
     std::string login;
     std::string password;
@@ -38,25 +34,33 @@ struct User {
         SUPERUSER,
         TEACHER,
         STUDENT,
+        GUEST
     } permissions = NONE;
 };
-
-
-
-struct Lecture {
-    std::string teacher_login;
-    std::string group_name;
-    std::string thematic;
-    std::string cabinet;
-    int date;
+struct Teacher {
+    std::string login;
+    std::string name;
+    std::string car;
 };
-
+struct Student {
+    std::string login;
+    std::string name;
+    std::string groupName;
+    Teacher teacher;
+};
+struct Lecture {
+    std::string teacher;
+    std::string groupName;
+    std::string title;
+    std::string classroom;
+    int time;
+};
 struct Practice {
     std::string teacher_login;
     std::string student_login;
-    std::string thematic;
+    std::string title;
     std::string car;
-    int date;
+    int time;
 };
 
 

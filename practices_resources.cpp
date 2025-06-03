@@ -23,7 +23,7 @@ std::shared_ptr<http_response> practices_resource::render_GET(const http_request
 
     std::string method = req.get_path_piece(1);
     if (method == "") {
-        auto practices = AppDB()->getPractices();
+        auto practices = AppDB().getPractices();
         auto response = practicesToResponse(practices);
         delete practices;
         return response;
@@ -31,7 +31,7 @@ std::shared_ptr<http_response> practices_resource::render_GET(const http_request
         if (!(loginAndPerms->first == string(req.get_arg("student"))))
             return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
-        auto practices = AppDB()->getPracticesByStudent(req.get_arg("student"));
+        auto practices = AppDB().getPracticesByStudent(req.get_arg("student"));
         auto response = practicesToResponse(practices);
         delete practices;
         return response;
@@ -39,7 +39,7 @@ std::shared_ptr<http_response> practices_resource::render_GET(const http_request
         if (!(loginAndPerms->first == string(req.get_arg("teacher"))))
             return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
-        auto practices = AppDB()->getPracticesByTeacher(req.get_arg("teacher"));
+        auto practices = AppDB().getPracticesByTeacher(req.get_arg("teacher"));
         auto response = practicesToResponse(practices);
         delete practices;
         return response;
@@ -48,7 +48,7 @@ std::shared_ptr<http_response> practices_resource::render_GET(const http_request
             return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
         auto practices =
-            AppDB()->getPracticesByUserInstructor(req.get_arg("studentLookingForPractice"));
+            AppDB().getPracticesByUserInstructor(req.get_arg("studentLookingForPractice"));
         auto response = practicesToResponse(practices);
         delete practices;
         return response;
@@ -62,7 +62,7 @@ std::shared_ptr<http_response> practices_resource::render_GET(const http_request
             return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
         }
 
-        auto practices = AppDB()->getPracticesByTime(fromTime, toTime);
+        auto practices = AppDB().getPracticesByTime(fromTime, toTime);
         if(!practices) {
             return std::shared_ptr<http_response>(new string_response("Database select error!", 500));
         }
@@ -105,10 +105,10 @@ std::shared_ptr<http_response> practices_resource::render_PUT(const http_request
     newPractice.student_login = "";
     newPractice.car = "";
 
-    if(AppDB()->isUserExist(newPractice.teacher_login))
+    if(AppDB().isUserExist(newPractice.teacher_login))
         return std::shared_ptr<http_response>(new string_response("Teacher does not exist!", 404));
 
-    if(!AppDB()->addPractice(newPractice))
+    if(!AppDB().addPractice(newPractice))
         return std::shared_ptr<http_response>(new string_response("Practice already exist!", 409));
 
 
@@ -139,7 +139,7 @@ std::shared_ptr<http_response> practices_resource::render_DELETE(const http_requ
     } catch (std::exception &e) {
         return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
     }
-    if(!AppDB()->deletePractice(teacher, time))
+    if(!AppDB().deletePractice(teacher, time))
         return std::shared_ptr<http_response>(new string_response("Practice does not exist!", 404));
     return std::shared_ptr<http_response>(new string_response("SUCCESS"));
 }
@@ -181,7 +181,7 @@ std::shared_ptr<http_response> practices_resource::render_PATCH(const http_reque
         return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
     }
 
-    if(!(practice = AppDB()->getPractice(teacher, time)))
+    if(!(practice = AppDB().getPractice(teacher, time)))
         return std::shared_ptr<http_response>(new string_response("Practice does not exist!", 404));
 
     if(practice->student_login != "") {
@@ -195,7 +195,7 @@ std::shared_ptr<http_response> practices_resource::render_PATCH(const http_reque
     practice->student_login = student;
     practice->car = car;
 
-    if(!AppDB()->changePractice(*practice)) {
+    if(!AppDB().changePractice(*practice)) {
         delete practice;
         return std::shared_ptr<http_response>(new string_response("Practice does not exist!", 404));
     }
@@ -220,12 +220,12 @@ std::shared_ptr<http_response> practices_resource::practicesToResponse(std::vect
         j_practice.erase("teacher_login");
         j_practice.erase("student_login");
 
-        auto studentName = AppDB()->getUserName(practice.student_login);
+        auto studentName = AppDB().getUserName(practice.student_login);
         if (studentName) {
             j_practice["student_name"] = *studentName;
             delete studentName;
         } else j_practice["student_name"] = "";
-        auto teacherName = AppDB()->getUserName(practice.teacher_login);
+        auto teacherName = AppDB().getUserName(practice.teacher_login);
         j_practice["teacher_name"] = *teacherName;
         delete teacherName;
 

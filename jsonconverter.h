@@ -36,8 +36,6 @@ public:
     static Result jsonToUser(const nlohmann::json &, User &);
     static Result userToJson(const User &, nlohmann::json &);
 
-    // NOT IMPLEMENTED
-
     // Lecture
     static Result jsonToLecture(nlohmann::json &, Lecture &);
     static Result lectureToJson(Lecture &, nlohmann::json &);

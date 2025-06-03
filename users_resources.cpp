@@ -25,7 +25,7 @@ std::shared_ptr<http_response> users_resources::getUser(std::string login)
 {
     std::string userString;
     json j;
-    User *user = AppDB()->getUser(login);
+    User *user = AppDB().getUser(login);
     if (!user)
         return std::shared_ptr<http_response>(new string_response("User does not exist!", 404));
 
@@ -47,7 +47,7 @@ std::shared_ptr<http_response> users_resources::getUsersPage(int page)
 {
     std::string userArrayString;
     json j_user, j_userArray = {};
-    auto users = AppDB()->getUsers(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
+    auto users = AppDB().getUsers(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
 
     for (auto &user : *users) {
         JsonConverter::userToJson(user, j_user);
@@ -75,14 +75,14 @@ std::shared_ptr<http_response> users_resources::getUserAttribute(std::string log
     json j_response;
 
     if (attribute == NAME) {
-        auto name = AppDB()->getUserName(login);
+        auto name = AppDB().getUserName(login);
         if (!name) {
             return std::shared_ptr<http_response>(new string_response("User does not exist!", 404));
         }
         j_response["name"] = *name;
         delete name;
     } else if (attribute == PERMISSIONS){
-        auto perm = AppDB()->getUserPermissions(login);
+        auto perm = AppDB().getUserPermissions(login);
         if (perm == User::NONE) {
             return std::shared_ptr<http_response>(new string_response("User does not exist!", 404));
         }
@@ -106,7 +106,7 @@ std::shared_ptr<http_response> users_resources::getUsersAttributesPage(UserAttri
     json j_user, j_userArray = {};
 
     if (attribute == NAME) {
-        auto users = AppDB()->getUsersName(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
+        auto users = AppDB().getUsersName(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
         for (auto &user : *users) {
             j_user["login"] = user.first;
             j_user["names"] = user.second;
@@ -114,7 +114,7 @@ std::shared_ptr<http_response> users_resources::getUsersAttributesPage(UserAttri
         }
         delete users;
     } else if (attribute == PERMISSIONS){
-        auto users = AppDB()->getUsersPermissions(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
+        auto users = AppDB().getUsersPermissions(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
         for (auto &user : *users) {
             j_user["login"] = user.first;
             j_user["permissions"] = static_cast<int>(user.second);
@@ -129,8 +129,7 @@ std::shared_ptr<http_response> users_resources::getUsersAttributesPage(UserAttri
 #ifdef HEADER_RESPONSE
     response->with_header("users", userArrayString);
 #else
-    response->with_footer("users", u
-                                       serArrayString);
+    response->with_footer("users", userArrayString);
 #endif
     return response;
 }
@@ -145,11 +144,11 @@ std::shared_ptr<http_response> users_resources::render_GET(const http_request &r
     std::shared_ptr<http_response> response;
     int page = 1;
 
-    std::string token = std::string(req.get_header("token"));
-    auto userAndPerms = auth::tokenToUserAndPermenissions(token);
-    if (userAndPerms == nullptr || userAndPerms->second == User::NONE) {
-        return std::shared_ptr<http_response>(new string_response("Authorization failed!", 401));
-    }
+    // std::string token = std::string(req.get_header("token"));
+    // auto userAndPerms = auth::tokenToUserAndPermenissions(token);
+    // if (userAndPerms == nullptr || userAndPerms->second == User::NONE) {
+    //     return std::shared_ptr<http_response>(new string_response("Authorization failed!", 401));
+    // }
 
     if (!req.get_arg("page").values.empty()) {
         page = std::stoi(std::string(req.get_arg("page")));
@@ -164,8 +163,8 @@ std::shared_ptr<http_response> users_resources::render_GET(const http_request &r
     // No login
     if (req.get_arg("login").values.empty()) {
         // Perm check
-        if (userAndPerms->second != User::SUPERUSER)
-            return std::shared_ptr<http_response>(new string_response("No perminission to access resource!", 403));
+        // if (userAndPerms->second != User::SUPERUSER)
+        //     return std::shared_ptr<http_response>(new string_response("No perminission to access resource!", 403));
         // No attribute
         if (attribute == BLANK) {
             response = getUsersPage(page);
@@ -176,9 +175,9 @@ std::shared_ptr<http_response> users_resources::render_GET(const http_request &r
     // Login given
     } else {
         // Perm check
-        if (userAndPerms->second != User::SUPERUSER &&
-            userAndPerms->first != std::string(req.get_arg("login"))
-        ) return std::shared_ptr<http_response>(new string_response("No perminission to access resource!", 403));
+        // if (userAndPerms->second != User::SUPERUSER &&
+        //     userAndPerms->first != std::string(req.get_arg("login"))
+        // ) return std::shared_ptr<http_response>(new string_response("No perminission to access resource!", 403));
         // No attribute
         if (attribute == BLANK) {
             response = getUser(req.get_arg("login"));

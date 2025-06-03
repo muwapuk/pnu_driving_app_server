@@ -1,0 +1,47 @@
+TESTS
+
+student:
+	getSubjects()
+	getSubjectQuestsAmount(subject)
+	getSubjectQuest(subject, quest_rowid)
+	
+	getTicketsAmount(categ)
+	getTicketQuestsAmount(categ, tick)
+	getQuest(categ, tick, num)
+
+	answQuest(categ, tick, num, answ)
+
+teacher: 
+	insertTick(categ, tick)
+	deleteTick(categ, tick)
+	
+	insertQuest(categ, tick, num, data)
+	deleteQuest(categ, tick, num)
+	modifyQuest(categ, tick, num, data)
+
+
+PRACTICES
+
+teacher:
+	createPractice(login, title, car, date)
+	deletePractice(login, date)
+	getPractices(login)
+	
+student:
+	signUpForPractice(login, date)
+	unsignFromPractice(login, date)
+	getPractices(login)
+
+
+LECTURES
+
+teacher:
+	createLecture(login, group, title, classroom, date)
+	removeLecture(login, date)
+	getLectures(login)	
+
+student:
+	getLectures(login)
+
+	
+	

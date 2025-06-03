@@ -16,79 +16,79 @@ using std::string;
 // Singleton
 class AppDatabase
 {
-    AppDatabase(string name);
+    const string DATABASE_NAME = "data.db3";
+
+    AppDatabase();
     ~AppDatabase();
 
-    // Opens the database
-    bool initSQLite(string name);
-    bool createTables(); // If not exist
-    // Counts tickets amount from different categories and moves result into specific variables
-    void countTickets();
+    // If not exist
+    bool createTables();
+    bool createTriggers();
 
     bool decreaseQuestionId(int id);
 public:
     // Singleton preparation
-    static AppDatabase *getInstance(string databaseName = "data.db3");
+    static AppDatabase &getInstance();
     AppDatabase(const AppDatabase &) = delete;
     AppDatabase operator=(const AppDatabase &) = delete;
 
-    // Returns tickets amount from variables
-    int getTicketsABamount();
-    int getTicketsCDamount();
+//  ACCESSORS
 
-    // Question table accessors
-    bool addQuestion(Question &);
-    bool modifyQuestion(Question &);
-    bool deleteQuestion(Question::Category, int ticketNum, int questionNum);
-    int getTicketQuestionsAmount(Question::Category, int ticketNum);
-    int getThemeQuestionsAmount(string theme);
-    vector<string> *getQuestionsThemes(); //////////////////////////////
-    vector<int> *getQuestionsIdsByTheme(string theme);
-    Question *getQuestion(Question::Category, int ticketNum, int questionNum);
-    std::list<Question> *getTicketQuestions(Question::Category, int ticketNum);
+// Ticket table accessors
+    bool insertTicket(tickets::Categories category, int num);
+    bool deleteTicket(int id);
+    std::shared_ptr<vector<int>> getTicketsIdByCategory(tickets::Categories category);
 
-    // User table accessors
-    bool addUser(User &);
+// Question table accessors
+    std::shared_ptr<vector<string>> getQuestionsSubjects();
+    std::shared_ptr<vector<int>> getQuestionsIdByTicket(int ticketId);
+    std::shared_ptr<vector<int>> getQuestionsIdBySubject(string subject);
+
+    bool insertQuestion(Question &);
+    bool changeQuestion(int id, Question &);
+    bool deleteQuestion(int id);
+    std::shared_ptr<Question> getQuestion(int id);
+    int getRightAnswer(int id);
+
+// Groups table accessors
+    bool insertGroup(string groupName);
+    bool deleteGroup(int id);
+    std::shared_ptr<string> getGroupName(int id);
+    int getGroupId(string groupName);
+
+// Users table accessors
+    bool insertUser(User &);
     bool deleteUser(string login);
-    bool changeUserPassword(string login, string newPassword);
-    User *getUser(string login);
-    string *getUserName(string login);
-    string *getUserPassword(string login);
-    User::Permissions getUserPermissions(string login);
+    bool changeUserName(string login, string newName);
+    bool changeUserPassword(string login, string newPass);
+    bool changeUserPermissions(string login, User::Permissions newPerm);
+
+    // Make student
+    bool setUserStudent(string login, int groupId, string assignedTeacherLogin);
+    bool changeStudentGroup(string studentLogin, int groupId);
+    bool assignStudentTeacher(string studentLogin, string teacherLogin);
+    // Make teacher
+    bool setUserTeacher(string login, string car);
+
+    // Getters
+    std::shared_ptr<User> getUser(string login);
+    std::shared_ptr<vector<User>> getUsersList(int startRow, int amount);
+    std::shared_ptr<vector<Student>> getStudentsList(int startRow, int amount);
+    std::shared_ptr<vector<Student>> getStudentsListByGroup(int groupId, int startRow, int amount);
+    std::shared_ptr<vector<Teacher>> getTeachersList(int startRow, int amount);
     bool isUserExist(string login);
 
-    vector<User> *getUsers(int startIndx, int amount);
-    vector<pair<string, string>> *getUsersName(int startIndx, int amount);
-    vector<pair<string, string>> *getUsersPassword(int startIndx, int amount);
-    vector<pair<string, User::Permissions>> *getUsersPermissions(int startIndx, int amount);
-
-    // User errors table accessors
-    bool addError(string userLogin,
-                  Question::Category category,
-                  int ticketNum,
-                  int questionNum,
-                  int answer);
-    bool deleteError(string userLogin,
-                     Question::Category category,
-                     int ticketNum,
-                     int questionNum);
-
-    // Tokens table accessors
+// Tokens table accessors
     bool addToken(string token, string login);
     bool deleteToken(string token);
     bool deleteTokenByUser(string login);
     bool deleteTokensByTime(int time);
     std::shared_ptr<pair<string, User::Permissions>> getLoginAndPermissionsByToken(string token);
 
-    // Groups and students_to_group tables accessors
-    bool addGroup(string groupName);
-    bool deleteGroup(string groupName);
-    bool addStudentToGroup(string studentLogin, string groupName);
-    bool deleteStudentFromGroup(string studentLogin, string groupName);
-    vector<string> *getGroupStudentsLogins(string groupName);
-    vector<string> *getGroupStudentsNames(string groupName);
+// Lectures table accessors
+    bool insertLecture(Lecture &);
 
-    // Lectures table accessors
+
     bool addLecture(Lecture &);
     bool deleteLecture(string teacherLogin, int date);
     vector<Lecture> *getLectures();
@@ -114,13 +114,13 @@ public:
 
 
 private:
-    SQLite::Database *db;
+    SQLite::Database db = SQLite::Database(DATABASE_NAME, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 
     uint ticketsABamount = 0;
     uint ticketsCDamount = 0;
 };
 
-inline AppDatabase *AppDB(){
+inline AppDatabase &AppDB(){
     return AppDatabase::getInstance();
 }
 

@@ -76,7 +76,7 @@ int auth::signUp(const http_request &req)
     }
     newUser.permissions = User::STUDENT;
 
-    if(!AppDB()->addUser(newUser)) {
+    if(!AppDB().addUser(newUser)) {
         return 3;
     }
 
@@ -85,14 +85,14 @@ int auth::signUp(const http_request &req)
 
 int auth::signIn(const http_request &req, bool &reload_nonce, std::string &token)
 {
-    if(!AppDB()->isUserExist(std::string(req.get_user())))
+    if(!AppDB().isUserExist(std::string(req.get_user())))
         return 1;
     if(!checkPassword(req, reload_nonce)) {
         return 2;
     }
 
     token = genRandomString(64);
-    AppDB()->addToken(token, std::string(req.get_user()));
+    AppDB().addToken(token, std::string(req.get_user()));
 
     return 0;
 }
@@ -100,7 +100,7 @@ int auth::signIn(const http_request &req, bool &reload_nonce, std::string &token
 
 bool auth::checkPassword(const http_request &req, bool &reload_nonce)
 {
-    auto pass = AppDB()->getUserPassword(std::string(req.get_user()));
+    auto pass = AppDB().getUserPassword(std::string(req.get_user()));
     bool correctPass = true;
 
     if (*pass != req.get_pass())
@@ -133,5 +133,5 @@ std::string auth::genRandomString(const int len)
 
 std::shared_ptr<pair<string, User::Permissions>> auth::tokenToUserAndPermenissions(std::string token)
 {
-    return AppDB()->getLoginAndPermissionsByToken(token);
+    return AppDB().getLoginAndPermissionsByToken(token);
 }
