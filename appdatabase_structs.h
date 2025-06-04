@@ -1,7 +1,7 @@
 #ifndef APPDATABASE_STRUCTS_H
 #define APPDATABASE_STRUCTS_H
 
-#include <cmath>
+#include <vector>
 #include <string>
 #include <sys/types.h>
 
@@ -49,20 +49,31 @@ struct Student {
     Teacher teacher;
 };
 struct Lecture {
-    std::string teacher;
-    std::string groupName;
+    std::string teacherLogin;
+    std::string groupId;
     std::string title;
     std::string classroom;
     int time;
 };
-struct Practice {
+struct PracticeSlot {
     std::string teacher_login;
-    std::string student_login;
-    std::string title;
-    std::string car;
     int time;
 };
-
+struct PracticeBooking {
+    std::string student_login;
+    int slot_id;
+};
+struct FreePracticeSlot {
+    int id;
+    int time;
+};
+struct BookedPracticeSlot {
+    int id;
+    int booking_id;
+    std::string studentLogin;
+    std::string studentName;
+    int time;
+};
 
 
 #endif // APPDATABASE_STRUCTS_H
