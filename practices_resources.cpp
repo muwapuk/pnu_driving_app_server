@@ -10,8 +10,8 @@ using namespace pr;
 
 using json = nlohmann::json;
 
-// .../practices -> JSON
-// .../practices -> JSON
+// .../practices/by-student/{student} -> JSON
+// .../practices/by-teacher/{teacher} -> JSON
 shared_ptr<http_response> practices_resource::render_GET(const http_request &req)
 {
     json j_requestBody;
@@ -19,6 +19,8 @@ shared_ptr<http_response> practices_resource::render_GET(const http_request &req
     auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
     if (!loginAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
+    if (loginAndPerms->second == User::NONE)
+        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
     if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_requestBody)
      || !JsonConverter::jsonValueToString(j_requestBody, "login",  requestLogin))
         return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
@@ -35,38 +37,52 @@ shared_ptr<http_response> practices_resource::render_GET(const http_request &req
     }
 }
 // .../practices <- JSON
+shared_ptr<http_response> practices_resource::render_PUT(const http_request &req)
+{
+    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
+    if (!loginAndPerms)
+        return shared_ptr<http_response>(new string_response("Bad Token", 401));
+    if (loginAndPerms->second == User::NONE)
+        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
+    if (loginAndPerms->second != User::TEACHER)
+        return shared_ptr<http_response>(new string_response("Forbidden!", 403));
+    PracticeSlot slot;
+    json j_slot;
+    if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_slot))
+        return shared_ptr<http_response>(new string_response("Bad request!", 400));
+    if (!JsonConverter::jsonToPracticeSlot(j_slot, slot))
+        return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
+    if (loginAndPerms->first != slot.teacher_login)
+        return shared_ptr<http_response>(new string_response("Forbidden!", 403));
+    if(AppDB().insertPracticeSlot(slot))
+        return shared_ptr<http_response>(new string_response("Slot already exist!", 409));
+
+    return shared_ptr<http_response>(new string_response("SUCCESS"));
+}
+// .../practices <- JSON
 shared_ptr<http_response> practices_resource::render_POST(const http_request &req)
 {
     auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
     if (!loginAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
+    if (loginAndPerms->second == User::NONE)
+        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
+    if (loginAndPerms->second != User::STUDENT)
+        return shared_ptr<http_response>(new string_response("Forbidden!", 403));
+    PracticeBooking booking;
+    json j_booking;
+    if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_booking))
+        return shared_ptr<http_response>(new string_response("Bad request!", 400));
+    if (!JsonConverter::jsonToPracticeBooking(j_booking, booking))
+        return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
+    if (loginAndPerms->first != booking.student_login)
+        return shared_ptr<http_response>(new string_response("Forbidden!", 403));
+    if(AppDB().insertPracticeBooking(booking))
+        return shared_ptr<http_response>(new string_response("Booking error!", 409));
 
-    if (loginAndPerms->second == User::TEACHER) {
-        PracticeSlot slot;
-        json j_slot;
-        if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_slot))
-            return shared_ptr<http_response>(new string_response("Bad request!", 400));
-        if (!JsonConverter::jsonToPracticeSlot(j_slot, slot))
-            return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
-        if (loginAndPerms->first != slot.teacher_login)
-            return shared_ptr<http_response>(new string_response("Forbidden!", 403));
-        if(AppDB().insertPracticeSlot(slot))
-            return shared_ptr<http_response>(new string_response("Slot already exist!", 409));
-        return shared_ptr<http_response>(new string_response("SUCCESS"));
-    } else if (loginAndPerms->second == User::STUDENT) {
-        PracticeBooking booking;
-        json j_booking;
-        if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_booking))
-            return shared_ptr<http_response>(new string_response("Bad request!", 400));
-        if (!JsonConverter::jsonToPracticeBooking(j_booking, booking))
-            return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
-        if (loginAndPerms->first != booking.student_login)
-            return shared_ptr<http_response>(new string_response("Forbidden!", 403));
-        if(AppDB().insertPracticeBooking(booking))
-            return shared_ptr<http_response>(new string_response("Booking error!", 409));
-    }
     return shared_ptr<http_response>(new string_response("SUCCESS"));
 }
+
 // .../practices/slots/{id}
 // .../practices/bookings/{id[0-9]+}
 shared_ptr<http_response> practices_resource::render_DELETE(const http_request &req)
@@ -74,6 +90,8 @@ shared_ptr<http_response> practices_resource::render_DELETE(const http_request &
     auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
     if (!loginAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
+    if (loginAndPerms->second == User::NONE)
+        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     json j_request;
     string requestLogin;
