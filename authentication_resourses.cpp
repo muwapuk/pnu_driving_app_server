@@ -59,7 +59,7 @@ int auth::signUp(const http_request &req)
     std::string jsonStr = std::string(req.get_content());
     nlohmann::json json;
 
-    if(JsonConverter::SUCCESS != JsonConverter::jsonStringToJson(jsonStr, json)) {
+    if(JsonConverter::SUCCESS != JsonConverter::jsonStringToJsonObject(jsonStr, json)) {
         return 1;
     }
     try {
@@ -76,7 +76,7 @@ int auth::signUp(const http_request &req)
     }
     newUser.permissions = User::STUDENT;
 
-    if(!AppDB().addUser(newUser)) {
+    if(!AppDB().insertUser(newUser)) {
         return 3;
     }
 
@@ -110,7 +110,6 @@ bool auth::checkPassword(const http_request &req, bool &reload_nonce)
     // if (!req.check_digest_auth("", *pass, 300, &reload_nonce)) {
     //     correctPass = false;
     // }
-    delete pass;
 
     return correctPass;
 }

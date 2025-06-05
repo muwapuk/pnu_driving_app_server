@@ -11,22 +11,24 @@ namespace pr {
 
 class practices_resource : public http_resource
 {
-    std::shared_ptr<http_response> practicesToResponse(std::vector<Practice>* practices);
+    std::shared_ptr<http_response>
+    buildStudentGetPracticesResponse(const std::string &studentLogin);
+
+    std::shared_ptr<http_response>
+    buildTeacherGetPracticesResponse(const std::string &teacherLogin);
+
+    bool bookStudentForPractice();
+    bool addSlotForPractice();
 public:
-    // .../practices -> JSON
     // .../practices/by-student/{student} -> JSON
     // .../practices/by-teacher/{teacher} -> JSON
-    // .../practices/by-time/from/{fromTime|[0-9]+}/to/{toTime|[0-9]+}" -> JSON
     std::shared_ptr<http_response> render_GET(const http_request &req);
 
     // .../practices <- JSON
-    std::shared_ptr<http_response> render_PUT(const http_request &req);
+    std::shared_ptr<http_response> render_POST(const http_request &req);
 
     // .../practices/?teacher=<...>&time=<...>
     std::shared_ptr<http_response> render_DELETE(const http_request &req);
-
-    // .../practices/?teacher=<...>&time=<...> <- JSON
-    std::shared_ptr<http_response> render_PATCH(const http_request &req);
 
     std::shared_ptr<http_response> render(const http_request &);
 };

@@ -25,14 +25,12 @@ std::shared_ptr<http_response> users_resources::getUser(std::string login)
 {
     std::string userString;
     json j;
-    User *user = AppDB().getUser(login);
+    auto user = AppDB().getUser(login);
     if (!user)
         return std::shared_ptr<http_response>(new string_response("User does not exist!", 404));
 
     JsonConverter::userToJson(*user, j);
-    JsonConverter::jsonToJsonString(j, userString);
-
-    delete user;
+    JsonConverter::jsonObjectToJsonString(j, userString);
 
     auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
 #ifdef HEADER_RESPONSE
@@ -47,16 +45,14 @@ std::shared_ptr<http_response> users_resources::getUsersPage(int page)
 {
     std::string userArrayString;
     json j_user, j_userArray = {};
-    auto users = AppDB().getUsers(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
+    auto users = AppDB().getUsersList(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
 
     for (auto &user : *users) {
         JsonConverter::userToJson(user, j_user);
         j_userArray.push_back(j_user);
     }
 
-    JsonConverter::jsonToJsonString(j_userArray, userArrayString);
-
-    delete users;
+    JsonConverter::jsonObjectToJsonString(j_userArray, userArrayString);
 
     auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
 
@@ -80,7 +76,6 @@ std::shared_ptr<http_response> users_resources::getUserAttribute(std::string log
             return std::shared_ptr<http_response>(new string_response("User does not exist!", 404));
         }
         j_response["name"] = *name;
-        delete name;
     } else if (attribute == PERMISSIONS){
         auto perm = AppDB().getUserPermissions(login);
         if (perm == User::NONE) {
@@ -88,7 +83,7 @@ std::shared_ptr<http_response> users_resources::getUserAttribute(std::string log
         }
         j_response["permissions"] = perm;
     }
-    JsonConverter::jsonToJsonString(j_response, userString);
+    JsonConverter::jsonObjectToJsonString(j_response, userString);
 
     auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
 
@@ -112,7 +107,6 @@ std::shared_ptr<http_response> users_resources::getUsersAttributesPage(UserAttri
             j_user["names"] = user.second;
             j_userArray.push_back(j_user);
         }
-        delete users;
     } else if (attribute == PERMISSIONS){
         auto users = AppDB().getUsersPermissions(1 + (page-1)*MAX_JSON_ARRAY_SIZE, MAX_JSON_ARRAY_SIZE);
         for (auto &user : *users) {
@@ -120,9 +114,8 @@ std::shared_ptr<http_response> users_resources::getUsersAttributesPage(UserAttri
             j_user["permissions"] = static_cast<int>(user.second);
             j_userArray.push_back(j_user);
         }
-        delete users;
     }
-    JsonConverter::jsonToJsonString(j_userArray, userArrayString);
+    JsonConverter::jsonObjectToJsonString(j_userArray, userArrayString);
 
     auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
 

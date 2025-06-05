@@ -55,6 +55,7 @@ struct Lecture {
     std::string classroom;
     int time;
 };
+// Needed for inserting
 struct PracticeSlot {
     std::string teacher_login;
     int time;
@@ -63,6 +64,9 @@ struct PracticeBooking {
     std::string student_login;
     int slot_id;
 };
+//
+
+// Needed for selecting
 struct FreePracticeSlot {
     int id;
     int time;
@@ -74,6 +78,7 @@ struct BookedPracticeSlot {
     std::string studentName;
     int time;
 };
+//
 
 
 #endif // APPDATABASE_STRUCTS_H

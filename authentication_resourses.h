@@ -29,7 +29,6 @@ std::string genRandomString(const int len);
 ///     0 - user created,
 ///     1 - user exist,
 ///     2 - bad json format
-///
 int signUp(const http_request &req);
 
 ///
@@ -38,9 +37,7 @@ int signUp(const http_request &req);
 ///     0 - user authorized,
 ///     1 - user not exist,
 ///     2 - incorrect password
-///
 int signIn(const http_request &req, bool &reload_nonce, std::string &token);
-
 
 bool checkPassword(const http_request &req, bool &reload_nonce);
 

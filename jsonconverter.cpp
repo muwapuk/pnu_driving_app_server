@@ -2,7 +2,7 @@
 
 using json = nlohmann::json;
 
-JsonConverter::Result JsonConverter::jsonStringToJson(const std::string &str, nlohmann::json &j)
+JsonConverter::Result JsonConverter::jsonStringToJsonObject(const std::string &str, nlohmann::json &j)
 {
     json json;
     try {
@@ -14,7 +14,7 @@ JsonConverter::Result JsonConverter::jsonStringToJson(const std::string &str, nl
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::jsonToJsonString(nlohmann::json &j, std::string &str)
+JsonConverter::Result JsonConverter::jsonObjectToJsonString(nlohmann::json &j, std::string &str)
 {
     std::stringstream ss;
 
@@ -24,12 +24,12 @@ JsonConverter::Result JsonConverter::jsonToJsonString(nlohmann::json &j, std::st
     return SUCCESS;
 }
 
-void JsonConverter::mergeJson(nlohmann::json &j, const nlohmann::json &j_patch)
+void JsonConverter::mergeJsonObjects(nlohmann::json &j, const nlohmann::json &j_patch)
 {
     j.merge_patch(j_patch);
 }
 
-JsonConverter::Result JsonConverter::jsonObjectToString(const nlohmann::json &j, std::string key, std::string &out)
+JsonConverter::Result JsonConverter::jsonValueToString(const nlohmann::json &j, std::string key, std::string &out)
 {
     if (!j[key].is_string())
         return CONVERTATION_ERROR;
@@ -39,14 +39,14 @@ JsonConverter::Result JsonConverter::jsonObjectToString(const nlohmann::json &j,
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::stringToJson(std::string key, const std::string &obj, nlohmann::json &j)
+JsonConverter::Result JsonConverter::stringToJsonValue(std::string key, const std::string &obj, nlohmann::json &j)
 {
     j[key] = obj;
 
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::jsonObjectToInt(const nlohmann::json &j, std::string key, int &out)
+JsonConverter::Result JsonConverter::jsonValueToInt(const nlohmann::json &j, std::string key, int &out)
 {
     if (!j[key].is_number())
         return CONVERTATION_ERROR;
@@ -56,13 +56,14 @@ JsonConverter::Result JsonConverter::jsonObjectToInt(const nlohmann::json &j, st
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::intToJson(std::string key, int obj, nlohmann::json &j)
+JsonConverter::Result JsonConverter::intToJsonValue(std::string key, int obj, nlohmann::json &j)
 {
     j[key] = obj;
 
     return SUCCESS;
 }
 
+#ifdef STRUCTS_CONVERTERS
 JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question &question)
 {
     if (!j["category"].is_number()
@@ -75,6 +76,8 @@ JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question 
      || !j["rightAnswer"].is_number()
      || !j["comment"].is_string()
     ) return CONVERTATION_ERROR;
+
+
 
     j["category"].get_to(question.category);
     j["ticketNum"].get_to(question.ticket_num);
@@ -170,42 +173,31 @@ JsonConverter::Result JsonConverter::lectureToJson(Lecture &lecture, nlohmann::j
 
     return SUCCESS;
 }
+#endif
 
-JsonConverter::Result JsonConverter::jsonToPractice(nlohmann::json &j, Practice &practice)
+JsonConverter::Result JsonConverter::jsonToPracticeSlot(nlohmann::json &j, PracticeSlot &slot)
 {
-    if (!j["teacher_login"].is_string()
-        || !j["student_login"].is_string()
-        || !j["thematic"].is_string()
-        || !j["car"].is_number()
-        || !j["date"].is_number()
+    if (!j["login"].is_string()
+        || !j["time"].is_number()
+    ) return CONVERTATION_ERROR;
+
+    j["login"].get_to(booking.teacher_login);
+    j["time"].get_to(booking.time);
+
+    return SUCCESS;
+}
+
+JsonConverter::Result JsonConverter::jsonToPracticeBooking(nlohmann::json &j, PracticeBooking &booking)
+{
+    if (!j["login"].is_string()
+        || !j["time"].is_number()
         ) return CONVERTATION_ERROR;
 
-    j["teacher_login"].get_to(practice.teacher_login);
-    j["student_login"].get_to(practice.student_login);
-    j["thematic"].get_to(practice.thematic);
-    j["car"].get_to(practice.car);
-    j["date"].get_to(practice.date);
+    j["login"].get_to(booking.student_login);
+    j["time"].get_to(booking.slot_id);
 
     return SUCCESS;
 }
-
-JsonConverter::Result JsonConverter::practiceToJson(Practice &practice, nlohmann::json &j)
-{
-    json lectureJson = {
-        {"teacher_login", practice.teacher_login},
-        {"student_login", practice.student_login},
-        {"thematic", practice.thematic},
-        {"car", practice.car},
-        {"date", practice.date}
-    };
-
-    j.merge_patch(lectureJson);
-
-
-    return SUCCESS;
-}
-
-
 
 
 

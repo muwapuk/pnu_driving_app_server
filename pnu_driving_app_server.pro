@@ -11,7 +11,7 @@ SOURCES += \
         appwebserver.cpp \
         authentication_resourses.cpp \
         jsonconverter.cpp \
-        lessons_resources.cpp \
+        lectures_resources.cpp \
         main.cpp \
         practices_resources.cpp \
         questions_resources.cpp \
@@ -23,7 +23,7 @@ HEADERS += \
     appwebserver.h \
     authentication_resourses.h \
     jsonconverter.h \
-    lessons_resources.h \
+    lectures_resources.h \
     practices_resources.h \
     questions_resources.h \
     users_resources.h

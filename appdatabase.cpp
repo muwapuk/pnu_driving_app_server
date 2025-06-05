@@ -754,6 +754,65 @@ shared_ptr<User> AppDatabase::getUser(string login)
     }
 }
 
+shared_ptr<string> AppDatabase::getName(string login)
+{
+    try {
+        SQLite::Statement query {db, "SELECT name FROM users "
+                                    "WHERE login = :login"};
+        query.bind(":login", login);
+
+        shared_ptr<string> name;
+
+        if (!query.executeStep())
+            return nullptr;
+
+        *name = query.getColumn(0).getString();
+        return name;
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
+shared_ptr<string> AppDatabase::getUserPassword(string login)
+{
+    try {
+        SQLite::Statement query {db, "SELECT password FROM users "
+                                     "WHERE login = :login"};
+        query.bind(":login", login);
+
+        shared_ptr<string> password;
+
+        if (!query.executeStep())
+            return nullptr;
+
+        *password = query.getColumn(0).getString();
+        return password;
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
+User::Permissions AppDatabase::getPermissions(string login)
+{
+    try {
+        SQLite::Statement query {db, "SELECT permissions FROM users "
+                                    "WHERE login = :login"};
+        query.bind(":login", login);
+
+        if (!query.executeStep())
+            return User::NONE;
+
+        User::Permissions permissions;
+        permissions = static_cast<User::Permissions>(query.getColumn(0).getInt());
+        return permissions;
+    } catch(std::exception &e) {
+        std::cerr << "exeption: " << e.what() << std::endl;
+        return User::NONE;
+    }
+}
+
 shared_ptr<vector<User>>
 AppDatabase::getUsersList(int startRow, int amount)
 {
@@ -1125,13 +1184,15 @@ bool AppDatabase::insertPracticeSlot(PracticeSlot &slot)
     }
 }
 
-bool AppDatabase::deletePracticeSlot(int id)
+bool AppDatabase::deletePracticeSlot(int id, string teacherLogin)
 {
     try {
         // SQLite::Statement query {db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
         SQLite::Statement query {db, "DELETE FROM practice_slots "
-                                    "WHERE id = :id"};
+                                    "WHERE id = :id "
+                                    "AND teacher_login = :teacher_login"};
         query.bind(":id", id);
+        query.bind(":teacher_login", teacherLogin);
 
         if (!query.exec())
             return false;
@@ -1155,20 +1216,21 @@ bool AppDatabase::insertPracticeBooking(PracticeBooking &booking)
             return false;
 
         return true;
-
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::deletePracticeBooking(int id)
+bool AppDatabase::deletePracticeBooking(int id, string studentLogin)
 {
     try {
         // SQLite::Statement query {db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
         SQLite::Statement query {db, "DELETE FROM practice_bookings "
-                                    "WHERE id = :id"};
+                                    "WHERE id = :id "
+                                    "AND student_login = :student_login"};
         query.bind(":id", id);
+        query.bind(":student_login", studentLogin);
 
         if (!query.exec())
             return false;

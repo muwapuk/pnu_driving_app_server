@@ -11,229 +11,192 @@ using namespace pr;
 using json = nlohmann::json;
 
 // .../practices -> JSON
-// .../practices/by-student/{student} -> JSON
-// .../practices/by-teacher/{teacher} -> JSON
-// .../practices/available-for-student/{studentLookingForPractice} -> JSON
-// .../practices/by-time/from/{fromTime|[0-9]+}/to/{toTime|[0-9]+}" -> JSON
-std::shared_ptr<http_response> practices_resource::render_GET(const http_request &req)
+// .../practices -> JSON
+shared_ptr<http_response> practices_resource::render_GET(const http_request &req)
 {
+    json j_requestBody;
+    string requestLogin;
     auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
     if (!loginAndPerms)
-        return std::shared_ptr<http_response>(new string_response("Bad Token", 401));
-
-    std::string method = req.get_path_piece(1);
-    if (method == "") {
-        auto practices = AppDB().getPractices();
-        auto response = practicesToResponse(practices);
-        delete practices;
+        return shared_ptr<http_response>(new string_response("Bad Token", 401));
+    if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_requestBody)
+     || !JsonConverter::jsonValueToString(j_requestBody, "login",  requestLogin))
+        return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
+    if (requestLogin != loginAndPerms->first)
+        return shared_ptr<http_response>(new string_response("Forbidden", 403));
+    if (loginAndPerms->second == User::TEACHER) {
+        auto response = buildTeacherGetPracticesResponse(loginAndPerms->first);
         return response;
-    } else if (!req.get_arg("student").values.empty()) {
-        if (!(loginAndPerms->first == string(req.get_arg("student"))))
-            return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
-
-        auto practices = AppDB().getPracticesByStudent(req.get_arg("student"));
-        auto response = practicesToResponse(practices);
-        delete practices;
-        return response;
-    } else if(!req.get_arg("teacher").values.empty()) {
-        if (!(loginAndPerms->first == string(req.get_arg("teacher"))))
-            return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
-
-        auto practices = AppDB().getPracticesByTeacher(req.get_arg("teacher"));
-        auto response = practicesToResponse(practices);
-        delete practices;
-        return response;
-    } else if(!req.get_arg("studentLookingForPractice").values.empty()) {
-        if (!(loginAndPerms->first == string(req.get_arg("studentLookingForPractice"))))
-            return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
-
-        auto practices =
-            AppDB().getPracticesByUserInstructor(req.get_arg("studentLookingForPractice"));
-        auto response = practicesToResponse(practices);
-        delete practices;
-        return response;
-    } else if (!req.get_arg("fromTime").values.empty()
-              && req.get_arg("toTime").values.empty()) {
-        int fromTime, toTime;
-        try {
-            fromTime = std::stoi(req.get_arg("fromTime"));
-            toTime = std::stoi(req.get_arg("toTime"));
-        } catch (std::exception &e) {
-            return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
-        }
-
-        auto practices = AppDB().getPracticesByTime(fromTime, toTime);
-        if(!practices) {
-            return std::shared_ptr<http_response>(new string_response("Database select error!", 500));
-        }
-        auto response = practicesToResponse(practices);
-        delete practices;
+    } else if (loginAndPerms->second == User::STUDENT) {
+        auto response = buildStudentGetPracticesResponse(loginAndPerms->first);
         return response;
     } else {
-        return std::shared_ptr<http_response>(new string_response("Server error!", 500));
+        return shared_ptr<http_response>(new string_response("Forbidden", 403));
     }
 }
-
 // .../practices <- JSON
-std::shared_ptr<http_response> practices_resource::render_PUT(const http_request &req)
+shared_ptr<http_response> practices_resource::render_POST(const http_request &req)
 {
     auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
     if (!loginAndPerms)
-        return std::shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (!(loginAndPerms->second == User::TEACHER
-       || loginAndPerms->second == User::SUPERUSER)
-    ) return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
+        return shared_ptr<http_response>(new string_response("Bad Token", 401));
 
-    Practice newPractice;
-    std::string jsonStr = std::string(req.get_content());
-    json json;
-
-
-    if(JsonConverter::SUCCESS != JsonConverter::jsonStringToJson(jsonStr, json))
-        return std::shared_ptr<http_response>(new string_response("Bad JSON!", 400));
-    try {
-        newPractice.teacher_login = json["teacher"];
-        newPractice.thematic = json["thematic"];
-        newPractice.date = json["date"];
-    } catch (nlohmann::json::exception) {
-        return std::shared_ptr<http_response>(new string_response("JSON struct does not match practice struct!", 400));
+    if (loginAndPerms->second == User::TEACHER) {
+        PracticeSlot slot;
+        json j_slot;
+        if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_slot))
+            return shared_ptr<http_response>(new string_response("Bad request!", 400));
+        if (!JsonConverter::jsonToPracticeSlot(j_slot, slot))
+            return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
+        if (loginAndPerms->first != slot.teacher_login)
+            return shared_ptr<http_response>(new string_response("Forbidden!", 403));
+        if(AppDB().insertPracticeSlot(slot))
+            return shared_ptr<http_response>(new string_response("Slot already exist!", 409));
+        return shared_ptr<http_response>(new string_response("SUCCESS"));
+    } else if (loginAndPerms->second == User::STUDENT) {
+        PracticeBooking booking;
+        json j_booking;
+        if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_booking))
+            return shared_ptr<http_response>(new string_response("Bad request!", 400));
+        if (!JsonConverter::jsonToPracticeBooking(j_booking, booking))
+            return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
+        if (loginAndPerms->first != booking.student_login)
+            return shared_ptr<http_response>(new string_response("Forbidden!", 403));
+        if(AppDB().insertPracticeBooking(booking))
+            return shared_ptr<http_response>(new string_response("Booking error!", 409));
     }
-
-    if (loginAndPerms->first != newPractice.teacher_login)
-        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
-
-    newPractice.student_login = "";
-    newPractice.car = "";
-
-    if(AppDB().isUserExist(newPractice.teacher_login))
-        return std::shared_ptr<http_response>(new string_response("Teacher does not exist!", 404));
-
-    if(!AppDB().addPractice(newPractice))
-        return std::shared_ptr<http_response>(new string_response("Practice already exist!", 409));
-
-
-    return std::shared_ptr<http_response>(new string_response("SUCCESS"));
+    return shared_ptr<http_response>(new string_response("SUCCESS"));
 }
-
-// .../practices/?teacher=<...>&time=<...>
-std::shared_ptr<http_response> practices_resource::render_DELETE(const http_request &req)
+// .../practices/slots/{id}
+// .../practices/bookings/{id[0-9]+}
+shared_ptr<http_response> practices_resource::render_DELETE(const http_request &req)
 {
     auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
     if (!loginAndPerms)
-        return std::shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (!(loginAndPerms->second == User::TEACHER
-          || loginAndPerms->second == User::SUPERUSER)
-    ) return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
+        return shared_ptr<http_response>(new string_response("Bad Token", 401));
 
-    std::string teacher;
-    int time;
-    if(!req.get_arg("teacher").values.empty())
-        return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
-    teacher = req.get_arg("teacher");
-
-    if (loginAndPerms->first != teacher)
-        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
-
-    try {
-        time = std::stoi(req.get_arg("time"));
-    } catch (std::exception &e) {
-        return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
+    json j_request;
+    string requestLogin;
+    int requestId;
+    if (!req.get_arg("id").values.empty()) {
+        return shared_ptr<http_response>(new string_response("Bad request!", 400));
     }
-    if(!AppDB().deletePractice(teacher, time))
-        return std::shared_ptr<http_response>(new string_response("Practice does not exist!", 404));
-    return std::shared_ptr<http_response>(new string_response("SUCCESS"));
+    requestId = std::stoi(req.get_arg("id"));
+    if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_request))
+        return shared_ptr<http_response>(new string_response("Bad request!", 400));
+    if (!JsonConverter::jsonValueToString(j_request, "login", requestLogin))
+        return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
+
+    if ((req.get_path_piece(1) == "slots"
+    && requestLogin == loginAndPerms->first
+    && loginAndPerms->second == User::TEACHER)
+    || loginAndPerms->second == User::SUPERUSER) {
+        if(!AppDB().deletePracticeSlot(requestId, requestLogin))
+            return shared_ptr<http_response>(new string_response("Slot not found!", 404));
+    } else if ((req.get_path_piece(1) == "bookings"
+    && requestLogin == loginAndPerms->first
+    && loginAndPerms->second == User::STUDENT)
+    || loginAndPerms->second == User::SUPERUSER) {
+        if(!AppDB().deletePracticeBooking(requestId, requestLogin))
+            return shared_ptr<http_response>(new string_response("Booking not found!", 404));
+    } else {
+        return shared_ptr<http_response>(new string_response("Forbidden!", 403));
+    }
+
+    return shared_ptr<http_response>(new string_response("SUCCESS"));
 }
 
-// .../practices/?teacher=<...>&time=<...> <- JSON
-std::shared_ptr<http_response> practices_resource::render_PATCH(const http_request &req)
+shared_ptr<http_response> practices_resource::render(const http_request &)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
-        return std::shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (!(loginAndPerms->second == User::TEACHER
-          || loginAndPerms->second == User::SUPERUSER)
-    ) return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
-
-    Practice *practice;
-    std::string teacher, student, car;
-    int time;
-    json j_practice;
-
-    try {
-        student = j_practice["student"];
-        car = j_practice["car"];
-    } catch (nlohmann::json::exception) {
-        return std::shared_ptr<http_response>(new string_response("Bad JSON!", 400));
-    }
-
-    if(student != loginAndPerms->first) {
-        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
-    }
-
-    std::string jsonStr = std::string(req.get_content());
-
-    if(!req.get_arg("teacher").values.empty())
-        return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
-    teacher = req.get_arg("teacher");
-    try {
-        time = std::stoi(req.get_arg("time"));
-    } catch (std::exception &e) {
-        return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
-    }
-
-    if(!(practice = AppDB().getPractice(teacher, time)))
-        return std::shared_ptr<http_response>(new string_response("Practice does not exist!", 404));
-
-    if(practice->student_login != "") {
-        return std::shared_ptr<http_response>(new string_response("Practice is already taken!", 409));
-    }
-
-    if(JsonConverter::SUCCESS != JsonConverter::jsonStringToJson(jsonStr, j_practice)) {
-        return std::shared_ptr<http_response>(new string_response("Bad JSON!", 400));
-    }
-
-    practice->student_login = student;
-    practice->car = car;
-
-    if(!AppDB().changePractice(*practice)) {
-        delete practice;
-        return std::shared_ptr<http_response>(new string_response("Practice does not exist!", 404));
-    }
-    delete practice;
-    return std::shared_ptr<http_response>(new string_response("SUCCESS"));
+    return shared_ptr<http_response>(new string_response("Method not allowed", 405));
 }
 
-std::shared_ptr<http_response> practices_resource::render(const http_request &)
+shared_ptr<http_response>
+practices_resource::buildStudentGetPracticesResponse(const std::string &studentLogin)
 {
-    return std::shared_ptr<http_response>(new string_response("Bad request!", 400));
-}
+    auto freeSlots = AppDB().getFreePracticeSlotsForStudent(studentLogin);
+    auto bookedSlots = AppDB().getBookedPracticeSlotsForStudent(studentLogin);
+    if (!freeSlots || !bookedSlots)
+        return shared_ptr<http_response>(new string_response("Student does not exist!", 404));
 
-std::shared_ptr<http_response> practices_resource::practicesToResponse(std::vector<Practice> *practices)
-{
-    json j_practices = {};
-    std::string responseString;
-    for (auto &practice : *practices) {
-        json j_practice;
-        JsonConverter::practiceToJson(practice, j_practice);
+    json j_practices;
+    json j_freeSlots;
+    json j_bookedSlots;
+    json j_selfBookedSlots;
 
-        // Changing logins to users names to hide logins from other users
-        j_practice.erase("teacher_login");
-        j_practice.erase("student_login");
-
-        auto studentName = AppDB().getUserName(practice.student_login);
-        if (studentName) {
-            j_practice["student_name"] = *studentName;
-            delete studentName;
-        } else j_practice["student_name"] = "";
-        auto teacherName = AppDB().getUserName(practice.teacher_login);
-        j_practice["teacher_name"] = *teacherName;
-        delete teacherName;
-
-        j_practices.push_back(j_practice);
+    for (auto &slot : *freeSlots) {
+        json j_slot;
+        j_slot["id"] = slot.id;
+        j_slot["time"] = slot.time;
+        j_freeSlots.push_back(j_slot);
     }
-    JsonConverter::jsonToJsonString(j_practices, responseString);
-    auto response = std::shared_ptr<string_response>(new string_response("SUCCESS"));
-    response->with_footer("practices", responseString);
-    return response;
+    j_practices["free-slots"] = j_freeSlots;
+
+    for (auto &slot : *bookedSlots) {
+        json j_slot;
+        if (slot.studentLogin != studentLogin) {
+            j_slot["id"] = slot.id;
+            j_slot["time"] = slot.time;
+            j_bookedSlots.push_back(j_slot);
+        } else {
+            j_slot["id"] = slot.id;
+            j_slot["time"] = slot.time;
+            j_selfBookedSlots.push_back(j_slot);
+        }
+    }
+    j_practices["booked-slots"] = j_bookedSlots;
+    j_practices["self-booked-slots"] = j_selfBookedSlots;
+
+    string responseBody;
+    JsonConverter::jsonObjectToJsonString(j_practices, responseBody);
+    return shared_ptr<string_response>(new string_response(responseBody,
+                                                           200,
+                                                           "application/json"));
 }
+
+shared_ptr<http_response>
+practices_resource::buildTeacherGetPracticesResponse(const std::string &teacherLogin)
+{
+    auto freeSlots = AppDB().getFreePracticeSlotsForStudent(teacherLogin);
+    auto bookedSlots = AppDB().getBookedPracticeSlotsForStudent(teacherLogin);
+    if (!freeSlots || !bookedSlots)
+        return shared_ptr<http_response>(new string_response("Student does not exist!", 404));
+
+    json j_practices;
+    json j_freeSlots;
+    json j_bookedSlots;
+
+    for (auto &slot : *freeSlots) {
+        json j_slot;
+        j_slot["id"] = slot.id;
+        j_slot["time"] = slot.time;
+        j_freeSlots.push_back(j_slot);
+    }
+    j_practices["free-slots"] = j_freeSlots;
+
+    for (auto &slot : *bookedSlots) {
+        json j_slot;
+        j_slot["id"] = slot.id;
+        j_slot["time"] = slot.time;
+        j_slot["student-name"] = slot.studentName;
+        j_bookedSlots.push_back(j_slot);
+    }
+    j_practices["booked-slots"] = j_bookedSlots;
+
+    string responseBody;
+    JsonConverter::jsonObjectToJsonString(j_practices, responseBody);
+    return shared_ptr<string_response>(
+        new string_response(responseBody,200,"application/json"));
+}
+
+
+
+
+
+
+
+
+
+
+
 

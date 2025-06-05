@@ -46,7 +46,7 @@ public:
 
     bool insertQuestion(Question &);
     bool changeQuestion(int id, Question &);
-    bool *deleteQuestion(int id);
+    bool deleteQuestion(int id);
     shared_ptr<Question> getQuestion(int id);
     int getRightAnswer(int id);
 
@@ -74,6 +74,9 @@ public:
 
     // Getters
     shared_ptr<User> getUser(string login);
+    shared_ptr<string> getUserName(string login);
+    shared_ptr<string> getUserPassword(string login);
+    User::Permissions getUserPermissions(string login);
     shared_ptr<vector<User>> getUsersList(int startRow, int amount);
     shared_ptr<vector<Student>> getStudentsList(int startRow, int amount);
     shared_ptr<vector<Student>> getStudentsListByGroup(int groupId, int startRow, int amount);
@@ -97,11 +100,11 @@ public:
 
     // Practice slots
     bool insertPracticeSlot(PracticeSlot &);
-    bool deletePracticeSlot(int id);
+    bool deletePracticeSlot(int id, string teacherLogin);
 
     // Practice bookings
     bool insertPracticeBooking(PracticeBooking &);
-    bool deletePracticeBooking(int id);
+    bool deletePracticeBooking(int id, string studentLogin);
 
     // Practices getters
     shared_ptr<vector<FreePracticeSlot>> getFreePracticeSlotsForStudent(string studentLogin);

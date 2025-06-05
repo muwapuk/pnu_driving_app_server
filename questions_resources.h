@@ -7,7 +7,6 @@
 using namespace httpserver;
 namespace qr {
 
-
 class questions_resource : public http_resource
 {
 public:

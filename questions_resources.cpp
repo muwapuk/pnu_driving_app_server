@@ -67,7 +67,6 @@ questions_resource::render_GET(const http_request &req)
                     json j_response;
                     j_response.push_back(id);
                 }
-                delete ids;
                 string s_response;
                 JsonConverter::jsonToJsonString(j_response, s_response);
                 auto response = std::shared_ptr<http_response>(new string_response("SUCCESS"));
@@ -88,7 +87,6 @@ questions_resource::render_GET(const http_request &req)
                 json j_response;
                 j_response.push_back(theme);
             }
-            delete themes;
             string s_response;
             JsonConverter::jsonToJsonString(j_response, s_response);
             auto response = std::shared_ptr<http_response>(new string_response("SUCCESS"));
@@ -182,8 +180,6 @@ questions_resource::render_GET(const http_request &req)
         return std::shared_ptr<http_response>(new string_response("Attribute not found"));
 
     }
-
-    delete question;
 
     return response;
 }
@@ -317,7 +313,6 @@ questions_resource::render_PATCH(const http_request &req)
 
     AppDB().modifyQuestion(*question);
 
-    delete question;
     return std::shared_ptr<http_response>(new string_response("SUCCESS"));
 }
 
