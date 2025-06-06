@@ -63,13 +63,11 @@ JsonConverter::Result JsonConverter::intToJsonValue(std::string key, int obj, nl
     return SUCCESS;
 }
 
-#ifdef STRUCTS_CONVERTERS
 JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question &question)
 {
-    if (!j["category"].is_number()
-     || !j["ticketNum"].is_number()
+    if (!j["ticketNum"].is_number()
      || !j["questionNum"].is_number()
-     || !j["theme"].is_string()
+     || !j["subject"].is_string()
      || !j["image"].is_string()
      || !j["questionText"].is_string()
      || !j["answers"].is_string()
@@ -79,12 +77,11 @@ JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question 
 
 
 
-    j["category"].get_to(question.category);
-    j["ticketNum"].get_to(question.ticket_num);
-    j["questionNum"].get_to(question.question_num);
-    j["theme"].get_to(question.theme);
+    j["ticket-id"].get_to(question.ticketId);
+    j["number"].get_to(question.number);
+    j["subject"].get_to(question.subject);
     j["image"].get_to(question.image_base64);
-    j["questionText"].get_to(question.question_text);
+    j["questionText"].get_to(question.questionText);
     j["answers"].get_to(question.answers);
     j["rightAnswer"].get_to(question.rightAnswer);
     j["comment"].get_to(question.comment);
@@ -95,12 +92,11 @@ JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question 
 JsonConverter::Result JsonConverter::questionToJson(const Question &question, nlohmann::json &j)
 {
     json questionJson = {
-        {"category", question.category},
-        {"ticketNum", question.ticket_num},
-        {"questionNum", question.question_num},
-        {"theme", question.theme},
+        {"ticket-id", question.ticketId},
+        {"number", question.number},
+        {"subject", question.subject},
         {"image", question.image_base64},
-        {"questionText", question.question_text},
+        {"question-text", question.questionText},
         {"answers", question.answers},
         {"rightAnswer", question.rightAnswer},
         {"comment", question.comment}
@@ -111,6 +107,7 @@ JsonConverter::Result JsonConverter::questionToJson(const Question &question, nl
     return SUCCESS;
 }
 
+#ifdef STRUCTS_CONVERTERS
 JsonConverter::Result JsonConverter::jsonToUser(const nlohmann::json &j, User &user)
 {
     if (!j["login"].is_string()

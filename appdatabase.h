@@ -35,16 +35,16 @@ public:
 //  ACCESSORS
 
 // Ticket table accessors
-    bool insertTicket(tickets::Categories category, int num);
+    int insertTicket(tickets::Categories category, int num);
     bool deleteTicket(int id);
-    shared_ptr<vector<int>> getTicketsIdByCategory(tickets::Categories category);
+    shared_ptr<vector<pair<int, int>>> getTicketNumIdPairsByCategory(tickets::Categories category);
 
 // Question table accessors
     shared_ptr<vector<string>> getQuestionsSubjects();
-    shared_ptr<vector<int>> getQuestionsIdByTicket(int ticketId);
-    shared_ptr<vector<int>> getQuestionsIdBySubject(string subject);
+    shared_ptr<vector<pair<int, int>>> getQuestionNumIdPairsByTicket(int ticketId);
+    shared_ptr<vector<int>> getQuestionIdVecBySubject(string subject);
 
-    bool insertQuestion(Question &);
+    int insertQuestion(Question &);
     bool changeQuestion(int id, Question &);
     bool deleteQuestion(int id);
     shared_ptr<Question> getQuestion(int id);

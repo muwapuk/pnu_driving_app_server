@@ -249,21 +249,21 @@ bool AppDatabase::createTriggers()
 
 
 
-bool AppDatabase::insertTicket(tickets::Categories category, int num)
+int AppDatabase::insertTicket(tickets::Categories category, int num)
 {
     try {
-        SQLite::Statement query {db, "INSERT INTO tickets VALUES (?,?)"};
+        SQLite::Statement query {db, "INSERT INTO tickets VALUES (?,?) RETURNING id"};
 
         query.bind(1, category);
         query.bind(2, num);
 
-        if(!query.exec())
-            return false;
-
-        return true;
+        if (query.executeStep()) {
+            return query.getColumn(0).getInt();
+        }
+        return 0;
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
-        return false;
+        return 0;
     }
 }
 
@@ -283,22 +283,24 @@ bool AppDatabase::deleteTicket(int id)
     }
 }
 
-shared_ptr<vector<int>>
-AppDatabase::getTicketsIdByCategory(tickets::Categories category)
+shared_ptr<vector<pair<int, int>>>
+AppDatabase::getTicketNumIdPairsByCategory(tickets::Categories category)
 {
     try {
-        SQLite::Statement query {db, string("SELECT id FROM tickets "
+        SQLite::Statement query {db, string("SELECT number, id FROM tickets "
                                            "WHERE category = :category")};
         query.bind(":category", category);
 
-        shared_ptr<vector<int>> ids(new vector<int>());
+        shared_ptr<vector<pair<int, int>>> pairs(new vector<pair<int, int>>());
 
         while (query.executeStep()) {
-            ids->push_back(query.getColumn(1).getInt());
+            pairs->push_back({
+                query.getColumn(0).getInt(),
+                query.getColumn(1).getInt()
+            });
         }
 
-        return ids;
-
+        return pairs;
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
         return nullptr;
@@ -325,21 +327,24 @@ AppDatabase::getQuestionsSubjects()
     }
 }
 
-shared_ptr<vector<int>>
-AppDatabase::getQuestionsIdByTicket(int ticketId)
+shared_ptr<vector<pair<int, int>>>
+AppDatabase::getQuestionNumIdPairsByTicket(int ticketId)
 {
     try {
-        SQLite::Statement query {db, string("SELECT id FROM questions "
+        SQLite::Statement query {db, string("SELECT number, id FROM questions "
                                            "WHERE ticket_id = :ticket_id")};
         query.bind(":ticket_id", ticketId);
 
-        shared_ptr<vector<int>> ids(new vector<int>());
+        shared_ptr<vector<pair<int, int>>> pairs(new vector<pair<int, int>>());
 
         while (query.executeStep()) {
-            ids->push_back(query.getColumn(0).getInt());
+            pairs->push_back({
+                query.getColumn(0).getInt(),
+                query.getColumn(1).getInt()
+            });
         }
 
-        return ids;
+        return pairs;
 
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
@@ -348,7 +353,7 @@ AppDatabase::getQuestionsIdByTicket(int ticketId)
 }
 
 shared_ptr<vector<int>>
-AppDatabase::getQuestionsIdBySubject(string subject)
+AppDatabase::getQuestionIdVecBySubject(string subject)
 {
     try {
         SQLite::Statement query {db, string("SELECT id FROM questions "
@@ -369,27 +374,27 @@ AppDatabase::getQuestionsIdBySubject(string subject)
     }
 }
 
-bool AppDatabase::insertQuestion(Question &question)
+int AppDatabase::insertQuestion(Question &question)
 {
     try {
-        SQLite::Statement query {db, "INSERT OR IGNORE INTO questions VALUES (?,?,?,?,?,?,?,?)"};
+        SQLite::Statement query {db, "INSERT OR IGNORE INTO questions VALUES (NULL, ?,?,?,?,?,?,?,?) RETURNING id"};
 
-        query.bind(2, question.number);
-        query.bind(3, question.ticketId);
-        query.bind(4, question.subject);
-        query.bind(5, question.image_base64);
-        query.bind(6, question.questionText);
-        query.bind(7, question.answers);
-        query.bind(8, question.comment);
-        query.bind(9, question.rightAnswer);
+        query.bind(1, question.number);
+        query.bind(2, question.ticketId);
+        query.bind(3, question.subject);
+        query.bind(4, question.image_base64);
+        query.bind(5, question.questionText);
+        query.bind(6, question.answers);
+        query.bind(7, question.comment);
+        query.bind(8, question.rightAnswer);
 
-        if(!query.exec())
-            return false;
-
-        return true;
+        if (query.executeStep()) {
+            return query.getColumn(0).getInt();
+        }
+        return 0;
     } catch(std::exception &e) {
         std::cerr << "exeption: " << e.what() << std::endl;
-        return false;
+        return 0;
     }
 }
 
@@ -754,7 +759,7 @@ shared_ptr<User> AppDatabase::getUser(string login)
     }
 }
 
-shared_ptr<string> AppDatabase::getName(string login)
+shared_ptr<string> AppDatabase::getUserName(string login)
 {
     try {
         SQLite::Statement query {db, "SELECT name FROM users "
@@ -794,7 +799,7 @@ shared_ptr<string> AppDatabase::getUserPassword(string login)
     }
 }
 
-User::Permissions AppDatabase::getPermissions(string login)
+User::Permissions AppDatabase::getUserPermissions(string login)
 {
     try {
         SQLite::Statement query {db, "SELECT permissions FROM users "

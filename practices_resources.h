@@ -20,18 +20,21 @@ class practices_resource : public http_resource
     bool bookStudentForPractice();
     bool addSlotForPractice();
 public:
-    // .../practices/by-student/{student} -> JSON
-    // .../practices/by-teacher/{teacher} -> JSON
-    std::shared_ptr<http_response> render_GET(const http_request &req);
+    // .../practices/by-student -> JSON
+    std::shared_ptr<http_response> render_GET_slotsByStudent(const http_request &req);
+    // .../practices/by-teacher -> JSON
+    std::shared_ptr<http_response> render_GET_slotsByTeacher(const http_request &req);
 
     // .../practices <- JSON
-    std::shared_ptr<http_response> render_PUT(const http_request &req);
+    std::shared_ptr<http_response> render_PUT_practiceSlot(const http_request &req);
 
     // .../practices <- JSON
-    std::shared_ptr<http_response> render_POST(const http_request &req);
+    std::shared_ptr<http_response> render_POST_practiceBooking(const http_request &req);
 
-    // .../practices/?teacher=<...>&time=<...>
-    std::shared_ptr<http_response> render_DELETE(const http_request &req);
+    // .../practices/slots/{id}
+    std::shared_ptr<http_response> render_DELETE_practiceSlot(const http_request &req);
+    // .../practices/bookings/{id[0-9]+}
+    std::shared_ptr<http_response> render_DELETE_practiceBooking(const http_request &req);
 
     std::shared_ptr<http_response> render(const http_request &);
 };

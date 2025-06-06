@@ -7,6 +7,7 @@
 
 namespace tickets {
 enum Categories {
+    UNDEFINED,
     AB,
     CD,
 };
