@@ -93,8 +93,8 @@ public:
 // Lectures table accessors
     bool insertLecture(Lecture &);
     bool deleteLecture(int id);
-    shared_ptr<vector<Lecture>> getLecturesIdByTeacher(string teacherLogin);
-    shared_ptr<vector<Lecture>> getLecturesIdByGroup(int groupId);
+    shared_ptr<vector<Lecture>> getLecturesByTeacher(string teacherLogin);
+    shared_ptr<vector<Lecture>> getLecturesByGroup(int groupId);
 
 // Practices tables accessors
 

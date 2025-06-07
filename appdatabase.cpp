@@ -1117,7 +1117,7 @@ bool AppDatabase::deleteLecture(int id)
 }
 
 shared_ptr<vector<Lecture>>
-AppDatabase::getLecturesIdByTeacher(string teacherLogin)
+AppDatabase::getLecturesByTeacher(string teacherLogin)
 {
     try {
         SQLite::Statement query {db, "SELECT * FROM lectures "
@@ -1144,7 +1144,7 @@ AppDatabase::getLecturesIdByTeacher(string teacherLogin)
 }
 
 shared_ptr<vector<Lecture>>
-AppDatabase::getLecturesIdByGroup(int groupId)
+AppDatabase::getLecturesByGroup(int groupId)
 {
     try {
         SQLite::Statement query {db, "SELECT * FROM lectures "

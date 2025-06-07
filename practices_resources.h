@@ -1,7 +1,6 @@
 #ifndef PRACTICES_RESOURCES_H
 #define PRACTICES_RESOURCES_H
 
-#include "appdatabase_structs.h"
 #include <memory>
 #include <httpserver.hpp>
 

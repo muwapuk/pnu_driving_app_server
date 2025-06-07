@@ -3,15 +3,12 @@
 #include "authentication_resourses.h"
 #include "jsonconverter.h"
 
-#include <iostream>
-#include <nlohmann/json.hpp>
 
 using namespace pr;
 
 using json = nlohmann::json;
 
 // .../practices/by-student -> JSON
-// .../practices/by-teacher -> JSON
 shared_ptr<http_response> practices_resource::render_GET_slotsByStudent(const http_request &req)
 {
     json j_requestBody;
@@ -28,6 +25,7 @@ shared_ptr<http_response> practices_resource::render_GET_slotsByStudent(const ht
         return shared_ptr<http_response>(new string_response("Forbidden", 403));
     return buildStudentGetPracticesResponse(requestLogin);
 }
+// .../practices/by-teacher -> JSON
 shared_ptr<http_response> practices_resource::render_GET_slotsByTeacher(const http_request &req)
 {
     json j_requestBody;
