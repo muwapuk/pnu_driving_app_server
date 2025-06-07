@@ -6,34 +6,55 @@
 
 using json = nlohmann::json;
 
-std::shared_ptr<http_response> lectures_resource::render_GET_lecturesByTeacher(const http_request &req)
+// .../lectures/by-teacher/{id}
+shared_ptr<http_response> lectures_resource::render_GET_lecturesByTeacher(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second == User::NONE)
-        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
-
-    json j_requestBody;
-    string requestLogin;
-    if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_requestBody)
-        || !JsonConverter::jsonValueToString(j_requestBody, "login",  requestLogin))
-        return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
-    if ((requestLogin != loginAndPerms->first
-         && loginAndPerms->second != User::STUDENT)
-        || loginAndPerms->second != User::SUPERUSER)
+    if (uidAndPerms->second == User::NONE)
         return shared_ptr<http_response>(new string_response("Forbidden", 403));
-    return buildStudentGetPracticesResponse(requestLogin);
+
+    auto lectures = AppDB().getLecturesByTeacher(std::stoi(req.get_arg("id")));
+
+    json j_lectures;
+    for (auto &lecture : *lectures) {
+        json j_lecture;
+        JsonConverter::lectureToJson(lecture, j_lecture);
+        j_lectures.push_back(j_lecture);
+    }
+    string responseBody;
+    JsonConverter::jsonObjectToJsonString(j_lectures, responseBody);
+    return shared_ptr<http_response>(new string_response(responseBody));
 }
-std::shared_ptr<http_response> lectures_resource::render_GET_lecturesByGroup(const http_request &req)
+// .../lectures/by-group/{id} -> JSON {lecture}
+shared_ptr<http_response> lectures_resource::render_GET_lecturesByGroup(const http_request &req)
+{
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
+        return shared_ptr<http_response>(new string_response("Bad Token", 401));
+    if (uidAndPerms->second == User::NONE)
+        return shared_ptr<http_response>(new string_response("Forbidden", 403));
+
+    auto lectures = AppDB().getLecturesByGroup(std::stoi(req.get_arg("id")));
+
+    json j_lectures;
+    for (auto &lecture : *lectures) {
+        json j_lecture;
+        JsonConverter::lectureToJson(lecture, j_lecture);
+        j_lectures.push_back(j_lecture);
+    }
+    string responseBody;
+    JsonConverter::jsonObjectToJsonString(j_lectures, responseBody);
+    return shared_ptr<http_response>(new string_response(responseBody));
+}
+// .../lectures <- JSON {lecture}
+shared_ptr<http_response> lectures_resource::render_PUT_lecture(const http_request &req)
 {
 
 }
-std::shared_ptr<http_response> lectures_resource::render_PUT_lecture(const http_request &req)
-{
-
-}
-std::shared_ptr<http_response> lectures_resource::render_DELETE_lecture(const http_request &req)
+// .../lectures/{id}
+shared_ptr<http_response> lectures_resource::render_DELETE_lecture(const http_request &req)
 {
 
 }

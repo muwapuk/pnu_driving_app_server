@@ -33,10 +33,10 @@ using json = nlohmann::json;
 std::shared_ptr<http_response>
 questions_resource::render_GET_subjectsList(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second == User::NONE)
+    if (uidAndPerms->second == User::NONE)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     auto subjects = AppDB().getQuestionsSubjects();
@@ -52,10 +52,10 @@ questions_resource::render_GET_subjectsList(const http_request &req)
 std::shared_ptr<http_response>
 questions_resource::render_GET_questionsListBySubject(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second == User::NONE)
+    if (uidAndPerms->second == User::NONE)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     auto questions = AppDB().getQuestionIdVecBySubject(req.get_arg("subject"));
@@ -73,10 +73,10 @@ questions_resource::render_GET_questionsListBySubject(const http_request &req)
 std::shared_ptr<http_response>
 questions_resource::render_GET_ticketsList(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second == User::NONE)
+    if (uidAndPerms->second == User::NONE)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     tickets::Categories category = categories_strings[req.get_arg("category")];
@@ -98,10 +98,10 @@ questions_resource::render_GET_ticketsList(const http_request &req)
 std::shared_ptr<http_response>
 questions_resource::render_GET_questionsListByTicket(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second == User::NONE)
+    if (uidAndPerms->second == User::NONE)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     auto questions = AppDB().getQuestionNumIdPairsByTicket(std::stoi(req.get_arg("id")));
@@ -120,10 +120,10 @@ questions_resource::render_GET_questionsListByTicket(const http_request &req)
 std::shared_ptr<http_response>
 questions_resource::render_GET_question(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second == User::NONE)
+    if (uidAndPerms->second == User::NONE)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     auto question = AppDB().getQuestion(std::stoi(req.get_arg("id")));
@@ -137,11 +137,11 @@ questions_resource::render_GET_question(const http_request &req)
 // .../testing/categories/{category}/tickets/{number[0-9]+} -> json {id}
 std::shared_ptr<http_response> questions_resource::render_PUT_ticket(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second != User::TEACHER
-     || loginAndPerms->second != User::SUPERUSER)
+    if (uidAndPerms->second != User::TEACHER
+     || uidAndPerms->second != User::SUPERUSER)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     tickets::Categories category = categories_strings[req.get_arg("category")];
@@ -162,11 +162,11 @@ std::shared_ptr<http_response> questions_resource::render_PUT_ticket(const http_
 // .../testing/questions <- json {question} -> json {id}
 std::shared_ptr<http_response> questions_resource::render_PUT_question(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second != User::TEACHER
-     || loginAndPerms->second != User::SUPERUSER)
+    if (uidAndPerms->second != User::TEACHER
+     || uidAndPerms->second != User::SUPERUSER)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
 
@@ -190,11 +190,11 @@ std::shared_ptr<http_response> questions_resource::render_PUT_question(const htt
 // .../testing/tickets/by-id/{id|[0-9]+}
 std::shared_ptr<http_response> questions_resource::render_DELETE_ticket(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second != User::TEACHER
-     || loginAndPerms->second != User::SUPERUSER)
+    if (uidAndPerms->second != User::TEACHER
+     || uidAndPerms->second != User::SUPERUSER)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     if (AppDB().deleteTicket(std::stoi(req.get_arg("id"))))
@@ -205,11 +205,11 @@ std::shared_ptr<http_response> questions_resource::render_DELETE_ticket(const ht
 // .../testing/questions/by-id/{id|[0-9]+}
 std::shared_ptr<http_response> questions_resource::render_DELETE_question(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second != User::TEACHER
-     || loginAndPerms->second != User::SUPERUSER)
+    if (uidAndPerms->second != User::TEACHER
+     || uidAndPerms->second != User::SUPERUSER)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     if (AppDB().deleteQuestion(std::stoi(req.get_arg("id"))))
@@ -219,11 +219,11 @@ std::shared_ptr<http_response> questions_resource::render_DELETE_question(const 
 // .../testing/questions/by-id/{id} <- json {question}
 std::shared_ptr<http_response> render_PATCH_question(const http_request &req)
 {
-    auto loginAndPerms = auth::tokenToUserAndPermenissions(string(req.get_header("token")));
-    if (!loginAndPerms)
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (loginAndPerms->second != User::TEACHER
-     || loginAndPerms->second != User::SUPERUSER)
+    if (uidAndPerms->second != User::TEACHER
+     || uidAndPerms->second != User::SUPERUSER)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     json j_question;

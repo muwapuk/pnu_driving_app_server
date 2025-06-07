@@ -44,33 +44,35 @@ bool AppDatabase::createTables()
         );
         db.exec(
             "CREATE TABLE IF NOT EXISTS users ("
-            "login TEXT PRIMARY KEY,"
+            "id INTEGER PRIMARY KEY,"
+            "login TEXT,"
             "password TEXT,"
             "name TEXT,"
-            "permissions INTEGER);"
+            "permissions INTEGER,"
+            "UNIQUE(login));"
         );
         db.exec(
             "CREATE TABLE IF NOT EXISTS tokens ("
             "token TEXT PRIMARY KEY,"
-            "login TEXT,"
+            "user_id INTEGER,"
             "creation_time INTEGER,"
-            "FOREIGN KEY(login) REFERENCES users(login) ON DELETE CASCADE);"
+            "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);"
         );
         db.exec(
             "CREATE TABLE IF NOT EXISTS teachers ("
-            "user_login TEXT PRIMARY KEY,"
+            "user_id INTEGER PRIMARY KEY,"
             "car TEXT,"
-            "FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE);"
+            "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);"
         );
         db.exec(
             "CREATE TABLE IF NOT EXISTS students ("
-            "user_login TEXT,"
-            "group_id TEXT,"
-            "assigned_teacher TEXT,"
-            "FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,"
+            "user_id INTEGER,"
+            "group_id INTEGER,"
+            "assigned_teacher INTEGER,"
+            "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,"
             "FOREIGN KEY(group_id) REFERENCES groups(name) ON DELETE SET NULL,"
-            "FOREIGN KEY(assigned_teacher) REFERENCES teachers(user_login) ON DELETE SET NULL,"
-            "UNIQUE(user_login, group_id));"
+            "FOREIGN KEY(assigned_teacher) REFERENCES teachers(user_id) ON DELETE SET NULL,"
+            "UNIQUE(user_id, group_id));"
         );
         db.exec(
             "CREATE TABLE IF NOT EXISTS groups ("
@@ -81,28 +83,28 @@ bool AppDatabase::createTables()
         db.exec(
             "CREATE TABLE IF NOT EXISTS lectures ("
             "id INTEGER PRIMARY KEY,"
-            "teacher_login TEXT,"
+            "teacher_id INTEGER,"
             "group_id INTEGER,"
             "title TEXT,"
             "classroom TEXT,"
             "time INTEGER,"
-            "FOREIGN KEY(teacher_login) REFERENCES teachers(user_login) ON DELETE CASCADE,"
+            "FOREIGN KEY(teacher_id) REFERENCES teachers(user_id) ON DELETE CASCADE,"
             "FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE CASCADE,"
-            "UNIQUE(teacher_login, time),"
+            "UNIQUE(teacher_id, time),"
             "UNIQUE(group_id, time));"
         );
         db.exec(
             "CREATE TABLE IF NOT EXISTS practice_slots ("
-            "teacher_login TEXT,"
+            "teacher_id TEXT,"
             "time INTEGER,"
-            "FOREIGN KEY(teacher_login) REFERENCES teachers(user_login) ON DELETE CASCADE,"
-            "UNIQUE(teacher_login, time));"
+            "FOREIGN KEY(teacher_id) REFERENCES teachers(user_id) ON DELETE CASCADE,"
+            "UNIQUE(teacher_id, time));"
         );
         db.exec(
             "CREATE TABLE IF NOT EXISTS practice_bookings ("
-            "student_login TEXT,"
+            "student_id TEXT,"
             "slot_id TEXT,"
-            "FOREIGN KEY(student_login) REFERENCES students(user_login) ON DELETE CASCADE,"
+            "FOREIGN KEY(student_id) REFERENCES students(user_id) ON DELETE CASCADE,"
             "FOREIGN KEY(slot_id) REFERENCES practice_slots(id) ON DELETE CASCADE,"
             "UNIQUE(slot_id));"
         );
@@ -111,7 +113,7 @@ bool AppDatabase::createTables()
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -149,7 +151,7 @@ bool AppDatabase::createTriggers()
         );
         // Shift tickets numbers on deletion
         db.exec (
-            "CREATE TRIGGER IF NOT EXISTS tickets_numbers_shift_on_insert "
+            "CREATE TRIGGER IF NOT EXISTS tickets_numbers_shift_on_delete "
             "AFTER DELETE ON tickets "
             "BEGIN "
             "SELECT COALESCE(MAX(number), 0) INTO @current_max FROM tickets;"
@@ -195,6 +197,7 @@ bool AppDatabase::createTriggers()
             "   SELECT COALESCE(MAX(number), 0) INTO @max_number FROM questions;"
             "   SELECT CASE "
             "       WHEN NEW.number NOT BETWEEN 1 AND (@max_number + 1) THEN "
+            "           RAISE(ABORT, 'Question number out of range') "
             "   END;"
             "   IF NEW.number > OLD.number THEN "
             "       UPDATE questions "
@@ -211,7 +214,7 @@ bool AppDatabase::createTriggers()
         );
         // Shift questions numbers on deletion
         db.exec (
-            "CREATE TRIGGER IF NOT EXISTS questions_numbers_shift_on_insert "
+            "CREATE TRIGGER IF NOT EXISTS questions_numbers_shift_on_delete "
             "AFTER DELETE ON questions "
             "BEGIN "
             "SELECT COALESCE(MAX(number), 0) INTO @current_max FROM questions;"
@@ -230,11 +233,12 @@ bool AppDatabase::createTriggers()
             "   SELECT RAISE(ABORT, 'Student must book with assigned teacher only') "
             "   WHERE NOT EXISTS ("
             "       SELECT 1 FROM students "
-            "           WHERE user_login = NEW.student_login "
+            "           WHERE user_id = NEW.student_id "
             "           AND assigned_teacher = ("
-            "               SELECT teacher_login FROM practice_slots "
+            "               SELECT teacher_id FROM practice_slots "
             "               WHERE id = NEW.slot_id"
             "           )"
+            "   )"
             "END;"
         ); 
 
@@ -242,7 +246,7 @@ bool AppDatabase::createTriggers()
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -262,7 +266,7 @@ int AppDatabase::insertTicket(tickets::Categories category, int num)
         }
         return 0;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return 0;
     }
 }
@@ -278,7 +282,7 @@ bool AppDatabase::deleteTicket(int id)
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -302,7 +306,7 @@ AppDatabase::getTicketNumIdPairsByCategory(tickets::Categories category)
 
         return pairs;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -322,7 +326,7 @@ AppDatabase::getQuestionsSubjects()
         return subjects;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -347,7 +351,7 @@ AppDatabase::getQuestionNumIdPairsByTicket(int ticketId)
         return pairs;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -369,7 +373,7 @@ AppDatabase::getQuestionIdVecBySubject(string subject)
         return ids;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -393,7 +397,7 @@ int AppDatabase::insertQuestion(Question &question)
         }
         return 0;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return 0;
     }
 }
@@ -409,7 +413,8 @@ bool AppDatabase::changeQuestion(int id, Question &question)
                                       "comment = :comment,"
                                       "answers = :answers,"
                                       "right_answer = :right_answer "
-                                      "WHERE id = " + std::to_string(id)};
+                                      "WHERE id = :id"};
+        query.bind(":id", id);
         query.bind(":number", question.number);
         query.bind(":subject", question.subject);
         query.bind(":image_base64", question.image_base64);
@@ -423,7 +428,7 @@ bool AppDatabase::changeQuestion(int id, Question &question)
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -439,8 +444,35 @@ bool AppDatabase::deleteQuestion(int id)
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
+    }
+}
+shared_ptr<Question> AppDatabase::getQuestion(int id)
+{
+    try {
+        SQLite::Statement query {db, string("SELECT * FROM questions "
+                                           "WHERE id = :id")};
+        query.bind(":id", id);
+
+        shared_ptr<Question> question(new Question);
+        while (query.executeStep()) {
+            question->id = query.getColumn(0).getInt();
+            question->number = query.getColumn(1).getInt();
+            question->ticketId = query.getColumn(2).getInt();
+            question->subject = query.getColumn(3).getString();
+            question->image_base64 = query.getColumn(4).getString();
+            question->questionText = query.getColumn(5).getString();
+            question->comment = query.getColumn(6).getString();
+            question->answers = query.getColumn(7).getString();
+            question->rightAnswer = query.getColumn(8).getInt();
+        }
+
+        return question;
+
+    } catch(std::exception &e) {
+        std::cerr << "exception: " << e.what() << std::endl;
+        return nullptr;
     }
 }
 
@@ -458,7 +490,7 @@ int AppDatabase::getRightAnswer(int id)
         return query.getColumn(0).getInt();
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return 0;
     }
 }
@@ -474,7 +506,7 @@ bool AppDatabase::insertGroup(string groupName)
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -490,16 +522,16 @@ bool AppDatabase::deleteGroup(int id)
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-int AppDatabase::getGroupIdByStudent(string login)
+int AppDatabase::getGroupIdByStudent(int studentId)
 {
     try {
-        SQLite::Statement query {db, "SELECT group_id FROM students WHERE user_login = :user_login"};
-        query.bind(":user_login", login);
+        SQLite::Statement query {db, "SELECT group_id FROM students WHERE user_id = :user_id"};
+        query.bind(":user_id", studentId);
 
         if (!query.executeStep()) {
             return 0;
@@ -507,7 +539,7 @@ int AppDatabase::getGroupIdByStudent(string login)
 
         return query.getColumn(0).getInt();
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return 0;
     }
 }
@@ -524,7 +556,7 @@ shared_ptr<string> AppDatabase::getGroupName(int id)
 
         return shared_ptr<string>(new string(query.getColumn(0).getString()));
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -541,7 +573,7 @@ int AppDatabase::getGroupId(string groupName)
 
         return query.getColumn(0).getInt();
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return 0;
     }
 }
@@ -552,7 +584,7 @@ AppDatabase::getGroups()
     try {
         SQLite::Statement query {db, "SELECT * FROM groups"};
 
-        shared_ptr<vector<pair<int, string>>> groups;
+        shared_ptr<vector<pair<int, string>>> groups(new vector<pair<int, string>>);
         while (query.executeStep()) {
             int id = query.getColumn(0).getInt();
             string name = query.getColumn(1).getString();
@@ -561,7 +593,7 @@ AppDatabase::getGroups()
 
         return groups;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -580,193 +612,212 @@ bool AppDatabase::insertUser(User &user)
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::deleteUser(string login)
+bool AppDatabase::deleteUser(int id)
 {
     try {
-        SQLite::Statement query {db, string("DELETE FROM users WHERE login = :login")};
-        query.bind(":login", login);
+        SQLite::Statement query {db, string("DELETE FROM users WHERE id = :id")};
+        query.bind(":id", id);
 
         if(!query.exec())
             return false;
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::changeUserName(string login, string newName)
+bool AppDatabase::changeUserName(int id, string newName)
 {
     try {
         SQLite::Statement query {db, "UPDATE users SET "
                                     "name = :name "
-                                    "WHERE login = :login"};
+                                    "WHERE id = :id"};
         query.bind(":name", newName);
-        query.bind(":login", login);
+        query.bind(":id", id);
 
         if(!query.exec())
             return false;
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::changeUserPassword(string login, string newPass)
+bool AppDatabase::changeUserPassword(int id, string newPass)
 {
     try {
         SQLite::Statement query {db, "UPDATE users SET "
                                       "password = :password "
-                                      "WHERE login = :login"};
+                                      "WHERE id = :id"};
         query.bind(":password", newPass);
-        query.bind(":login", login);
+        query.bind(":id", id);
 
         if(!query.exec())
             return false;
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::changeUserPermissions(string login, User::Permissions newPerm)
+bool AppDatabase::changeUserPermissions(int id, User::Permissions newPerm)
 {
     try {
         SQLite::Statement query {db, "UPDATE users SET "
                                     "permissions = :permissions "
-                                    "WHERE login = :login"};
+                                    "WHERE id = :id"};
         query.bind(":permissions", newPerm);
-        query.bind(":login", login);
+        query.bind(":id", id);
 
         if(!query.exec())
             return false;
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::setUserStudent(string login, int groupId, string assignedTeacherLogin)
+bool AppDatabase::setUserStudent(int id, int groupId, int assignedTeacherId)
 {
     try {
         SQLite::Statement query {db, "INSERT OR IGNORE INTO students VALUES (?,?,?)"};
-        query.bind(1, login);
+        query.bind(1, id);
         query.bind(2, groupId);
-        query.bind(3, assignedTeacherLogin);
+        query.bind(3, assignedTeacherId);
 
         if(!query.exec())
             return false;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
-    if (changeUserPermissions(login, User::STUDENT))
+    if (!changeUserPermissions(id, User::STUDENT))
         return false;
     return true;
 }
 
-bool AppDatabase::changeStudentGroup(string studentLogin, int groupId)
+bool AppDatabase::changeStudentGroup(int studentId, int groupId)
 {
     try {
         SQLite::Statement query {db, "UPDATE students SET "
                                     "group_id = :group_id "
-                                    "WHERE user_login = :user_login"};
+                                    "WHERE user_id = :user_id"};
         query.bind(":group_id", groupId);
-        query.bind(":user_login", studentLogin);
+        query.bind(":user_id", studentId);
 
         if(!query.exec())
             return false;
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::assignStudentTeacher(string studentLogin, string teacherLogin)
+bool AppDatabase::assignStudentToTeacher(int studentId, int teacherId)
 {
     try {
         SQLite::Statement query {db, "UPDATE students SET "
                                     "assigned_teacher = :assigned_teacher "
-                                    "WHERE user_login = :user_login"};
-        query.bind(":assigned_teacher", teacherLogin);
-        query.bind(":user_login", studentLogin);
+                                    "WHERE user_id = :user_id"};
+        query.bind(":assigned_teacher", teacherId);
+        query.bind(":user_id", studentId);
 
         if(!query.exec())
             return false;
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::setUserTeacher(string login, string car)
+bool AppDatabase::setUserTeacher(int id, string car)
 {
     try {
         SQLite::Statement query {db, "INSERT OR IGNORE INTO teachers VALUES (?,?)"};
-        query.bind(1, login);
+        query.bind(1, id);
         query.bind(2, car);
 
         if(!query.exec())
             return false;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
-    if (changeUserPermissions(login, User::TEACHER)) {
+    if (!changeUserPermissions(id, User::TEACHER)) {
         return false;
     }
     return true;
 }
 
-shared_ptr<User> AppDatabase::getUser(string login)
+int AppDatabase::getUserIdByLogin(string login)
+{
+    try {
+        SQLite::Statement query {db, "SELECT id FROM users "
+                                    "WHERE login = :login"};
+        query.bind(":login", login);
+
+        if (!query.executeStep())
+            return 0;
+
+        int id = query.getColumn(0).getInt();
+
+        return id;
+
+    } catch(std::exception &e) {
+        std::cerr << "exception: " << e.what() << std::endl;
+        return 0;
+    }
+}
+
+shared_ptr<User> AppDatabase::getUser(int id)
 {
     try {
         SQLite::Statement query {db, "SELECT name, permissions FROM users "
-                                     "WHERE login = :login"};
-        query.bind(":login", login);
+                                     "WHERE id = :id"};
+        query.bind(":id", id);
 
         if (!query.executeStep())
             return nullptr;
 
-        shared_ptr<User> user;
-        user->login = login;
-        user->name = query.getColumn(2).getString();
-        user->permissions = static_cast<User::Permissions>(query.getColumn(3).getInt());
+        shared_ptr<User> user(new User);
+        user->name = query.getColumn(0).getString();
+        user->permissions = static_cast<User::Permissions>(query.getColumn(1).getInt());
 
         return user;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
 
-shared_ptr<string> AppDatabase::getUserName(string login)
+shared_ptr<string> AppDatabase::getUserName(int id)
 {
     try {
         SQLite::Statement query {db, "SELECT name FROM users "
-                                    "WHERE login = :login"};
-        query.bind(":login", login);
+                                    "WHERE id = :id"};
+        query.bind(":id", id);
 
-        shared_ptr<string> name;
+        shared_ptr<string> name(new string);
 
         if (!query.executeStep())
             return nullptr;
@@ -774,19 +825,19 @@ shared_ptr<string> AppDatabase::getUserName(string login)
         *name = query.getColumn(0).getString();
         return name;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
 
-shared_ptr<string> AppDatabase::getUserPassword(string login)
+shared_ptr<string> AppDatabase::getUserPassword(int id)
 {
     try {
         SQLite::Statement query {db, "SELECT password FROM users "
-                                     "WHERE login = :login"};
-        query.bind(":login", login);
+                                     "WHERE id = :id"};
+        query.bind(":id", id);
 
-        shared_ptr<string> password;
+        shared_ptr<string> password(new string);
 
         if (!query.executeStep())
             return nullptr;
@@ -794,17 +845,17 @@ shared_ptr<string> AppDatabase::getUserPassword(string login)
         *password = query.getColumn(0).getString();
         return password;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
 
-User::Permissions AppDatabase::getUserPermissions(string login)
+User::Permissions AppDatabase::getUserPermissions(int id)
 {
     try {
         SQLite::Statement query {db, "SELECT permissions FROM users "
-                                    "WHERE login = :login"};
-        query.bind(":login", login);
+                                    "WHERE id = :id"};
+        query.bind(":id", id);
 
         if (!query.executeStep())
             return User::NONE;
@@ -813,7 +864,7 @@ User::Permissions AppDatabase::getUserPermissions(string login)
         permissions = static_cast<User::Permissions>(query.getColumn(0).getInt());
         return permissions;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return User::NONE;
     }
 }
@@ -822,17 +873,17 @@ shared_ptr<vector<User>>
 AppDatabase::getUsersList(int startRow, int amount)
 {
     try {
-        SQLite::Statement query {db, "SELECT login, name, permissions FROM users "
+        SQLite::Statement query {db, "SELECT id, name, permissions FROM users "
                                     " WHERE rowid >= :start_row "
                                     " AND rowid < :end_row"};
         query.bind(":start_row", startRow);
         query.bind(":end_row", startRow + amount);
 
-        shared_ptr<vector<User>> users;
+        shared_ptr<vector<User>> users(new vector<User>);
 
         while (query.executeStep()) {
             User user;
-            user.login = query.getColumn(0).getString();
+            user.id = query.getColumn(0).getInt();
             user.name = query.getColumn(1).getString();
             user.permissions = static_cast<User::Permissions>(query.getColumn(2).getInt());
             users->push_back(user);
@@ -840,7 +891,7 @@ AppDatabase::getUsersList(int startRow, int amount)
 
         return users;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -851,37 +902,37 @@ AppDatabase::getStudentsList(int startRow, int amount)
     try {
         SQLite::Statement query {db,
             "SELECT "
-            "   s.user_login AS student_login,"
+            "   s.user_id AS student_id,"
             "   u.name AS student_name,"
             "   g.group_name AS student_group_name,"
-            "   t.user_login AS teacher_login,"
+            "   t.user_id AS teacher_id,"
             "   ut.name AS teacher_name "
             "FROM "
             "   students s "
             "JOIN "
-            "   users u ON s.user_login = u.login "
+            "   users u ON s.user_id = u.id "
             "JOIN "
             "   groups g ON s.group_id = g.id "
             "JOIN "
-            "   teachers t ON s.assigned_teacher = t.user_login "
+            "   teachers t ON s.assigned_teacher = t.user_id "
             "JOIN "
-            "   users ut ON t.user_login = ut.login "
+            "   users ut ON t.user_id = ut.id "
             "WHERE rowid >= :start_row "
             "AND rowid < :end_row"
         };
         query.bind(":start_row", startRow);
         query.bind(":end_row", startRow + amount);
 
-        shared_ptr<vector<Student>> students;
+        shared_ptr<vector<Student>> students(new vector<Student>);
 
         while (query.executeStep()) {
             Student student;
             Teacher teacher;
-            student.login = query.getColumn("student_login").getString();
+            student.userId = query.getColumn("student_id").getInt();
             student.name = query.getColumn("student_name").getString();
             student.groupName = query.getColumn("student_group_name").getString();
             student.teacher = teacher;
-            teacher.login = query.getColumn("teacher_login").getString();
+            teacher.userId = query.getColumn("teacher_id").getInt();
             teacher.name = query.getColumn("teacher_name").getString();
             teacher.car = "";
             student.teacher = teacher;
@@ -891,7 +942,7 @@ AppDatabase::getStudentsList(int startRow, int amount)
 
         return students;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -902,20 +953,20 @@ AppDatabase::getStudentsListByGroup(int groupId, int startRow, int amount)
     try {
         SQLite::Statement query {db,
             "SELECT "
-            "   s.user_login AS student_login,"
+            "   s.user_id AS student_id,"
             "   u.name AS student_name,"
-            "   t.user_login AS teacher_login,"
+            "   t.user_id AS teacher_id,"
             "   ut.name AS teacher_name "
             "FROM "
             "   students s "
             "JOIN "
-            "   users u ON s.user_login = u.login "
+            "   users u ON s.user_id = u.id "
             "JOIN "
             "   groups g ON s.group_id = g.id "
             "JOIN "
-            "   teachers t ON s.assigned_teacher = t.user_login "
+            "   teachers t ON s.assigned_teacher = t.user_id "
             "JOIN "
-            "   users ut ON t.user_login = ut.login "
+            "   users ut ON t.user_id = ut.id "
             "WHERE group_id = :group_id"
             "AND rowid >= :start_row "
             "AND rowid < :end_row"
@@ -924,15 +975,15 @@ AppDatabase::getStudentsListByGroup(int groupId, int startRow, int amount)
         query.bind(":start_row", startRow);
         query.bind(":end_row", startRow + amount);
 
-        shared_ptr<vector<Student>> students;
+        shared_ptr<vector<Student>> students(new vector<Student>);
 
         while (query.executeStep()) {
             Student student;
             Teacher teacher;
-            student.login = query.getColumn("student_login").getString();
+            student.userId = query.getColumn("student_id").getInt();
             student.name = query.getColumn("student_name").getString();
             student.teacher = teacher;
-            teacher.login = query.getColumn("teacher_login").getString();
+            teacher.userId = query.getColumn("teacher_id").getInt();
             teacher.name = query.getColumn("teacher_name").getString();
             teacher.car = "";
             student.teacher = teacher;
@@ -942,7 +993,7 @@ AppDatabase::getStudentsListByGroup(int groupId, int startRow, int amount)
 
         return students;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -957,11 +1008,11 @@ AppDatabase::getTeachersList(int startRow, int amount)
         query.bind(":start_row", startRow);
         query.bind(":end_row", startRow + amount);
 
-        shared_ptr<vector<Teacher>> teachers;
+        shared_ptr<vector<Teacher>> teachers(new vector<Teacher>);
 
         while (query.executeStep()) {
             Teacher teacher;
-            teacher.login = query.getColumn(0).getString();
+            teacher.userId = query.getColumn(0).getInt();
             teacher.name = query.getColumn(1).getString();
             teacher.car = query.getColumn(2).getString();
             teachers->push_back(teacher);
@@ -969,17 +1020,17 @@ AppDatabase::getTeachersList(int startRow, int amount)
 
         return teachers;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
 
-bool AppDatabase::isUserExist(string login)
+bool AppDatabase::isUserExist(int id)
 {
     try {
         SQLite::Statement query {db, "SELECT 1 FROM users "
-                                     "WHERE login = :login"};
-        query.bind(":login", login);
+                                     "WHERE id = :id"};
+        query.bind(":id", id);
 
         if (!query.executeStep())
             return false;
@@ -987,20 +1038,20 @@ bool AppDatabase::isUserExist(string login)
         return true;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::addToken(string token, string login)
+bool AppDatabase::addToken(string token, int user_id)
 {
     try {
         SQLite::Statement query {db, "INSERT OR REPLACE INTO tokens VALUES("
                                      ":token,"
-                                     ":login,"
+                                     ":user_id,"
                                      ":time)"};
         query.bind(":token", token);
-        query.bind(":login", login);
+        query.bind(":user_id", user_id);
         query.bind(":time", time(0));
 
         if (!query.exec())
@@ -1009,7 +1060,7 @@ bool AppDatabase::addToken(string token, string login)
         return true;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -1027,7 +1078,7 @@ bool AppDatabase::deleteToken(string token)
         return true;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -1045,34 +1096,34 @@ bool AppDatabase::deleteTokensByTime(int time)
         return true;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-shared_ptr<pair<string, User::Permissions>>
-AppDatabase::getLoginAndPermissionsByToken(string token)
+shared_ptr<pair<int, User::Permissions>>
+AppDatabase::getUserIdAndPermissionsByToken(string token)
 {
     try {
-        SQLite::Statement query {db, "SELECT tokens.login, users.permissions FROM tokens "
-                                      "JOIN users ON users.login = tokens.login "
+        SQLite::Statement query {db, "SELECT tokens.user_id, users.permissions FROM tokens "
+                                      "JOIN users ON users.id = tokens.user_id "
                                       "WHERE token = :token"};
         query.bind(":token", token);
 
         if (!query.executeStep())
             return nullptr;
 
-        shared_ptr<pair<string, User::Permissions>> loginAndPerms(
-            new pair<string, User::Permissions>(
-                query.getColumn(0).getString(),
+        shared_ptr<pair<int, User::Permissions>> idAndPerms(
+            new pair<int, User::Permissions>(
+                query.getColumn(0).getInt(),
                 static_cast<User::Permissions>(query.getColumn(1).getInt())
             )
         );
 
-        return loginAndPerms;
+        return idAndPerms;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -1081,7 +1132,7 @@ bool AppDatabase::insertLecture(Lecture &lecture)
 {
     try {
         SQLite::Statement query {db, "INSERT INTO lectures VALUES(?,?,?,?,?)"};
-        query.bind(1, lecture.teacherLogin);
+        query.bind(1, lecture.teacherId);
         query.bind(2, lecture.groupId);
         query.bind(3, lecture.title);
         query.bind(4, lecture.classroom);
@@ -1093,7 +1144,7 @@ bool AppDatabase::insertLecture(Lecture &lecture)
         return true;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -1111,25 +1162,25 @@ bool AppDatabase::deleteLecture(int id)
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
 shared_ptr<vector<Lecture>>
-AppDatabase::getLecturesByTeacher(string teacherLogin)
+AppDatabase::getLecturesByTeacher(int teacherId)
 {
     try {
         SQLite::Statement query {db, "SELECT * FROM lectures "
-                                    "WHERE teacher_login = :teacher_login"};
-        query.bind(":teacher_login", teacherLogin);
+                                    "WHERE teacher_id = :teacher_id"};
+        query.bind(":teacher_id", teacherId);
 
-        shared_ptr<vector<Lecture>> lectures;
+        shared_ptr<vector<Lecture>> lectures(new vector<Lecture>);
 
         while (query.executeStep()) {
             lectures->push_back(Lecture {
-                query.getColumn(0).getString(),
-                query.getColumn(1).getString(),
+                query.getColumn(0).getInt(),
+                query.getColumn(1).getInt(),
                 query.getColumn(2).getString(),
                 query.getColumn(3).getString(),
                 query.getColumn(4).getInt(),
@@ -1138,7 +1189,7 @@ AppDatabase::getLecturesByTeacher(string teacherLogin)
 
         return lectures;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -1149,14 +1200,14 @@ AppDatabase::getLecturesByGroup(int groupId)
     try {
         SQLite::Statement query {db, "SELECT * FROM lectures "
                                      "WHERE group_id = :group_id"};
-        query.bind(":group_name", groupId);
+        query.bind(":group_id", groupId);
 
-        shared_ptr<vector<Lecture>> lectures;
+        shared_ptr<vector<Lecture>> lectures(new vector<Lecture>);
 
         while (query.executeStep()) {
             lectures->push_back(Lecture {
-                query.getColumn(0).getString(),
-                query.getColumn(1).getString(),
+                query.getColumn(0).getInt(),
+                query.getColumn(1).getInt(),
                 query.getColumn(2).getString(),
                 query.getColumn(3).getString(),
                 query.getColumn(4).getInt(),
@@ -1166,7 +1217,7 @@ AppDatabase::getLecturesByGroup(int groupId)
         return lectures;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -1175,7 +1226,7 @@ bool AppDatabase::insertPracticeSlot(PracticeSlot &slot)
 {
     try {
         SQLite::Statement query {db, "INSERT INTO practice_slots VALUES(?,?)"};
-        query.bind(1, slot.teacher_login);
+        query.bind(1, slot.teacherId);
         query.bind(2, slot.time);
 
         if (!query.exec())
@@ -1184,20 +1235,18 @@ bool AppDatabase::insertPracticeSlot(PracticeSlot &slot)
         return true;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::deletePracticeSlot(int id, string teacherLogin)
+bool AppDatabase::deletePracticeSlot(int id)
 {
     try {
         // SQLite::Statement query {db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
         SQLite::Statement query {db, "DELETE FROM practice_slots "
-                                    "WHERE id = :id "
-                                    "AND teacher_login = :teacher_login"};
+                                    "WHERE id = :id"};
         query.bind(":id", id);
-        query.bind(":teacher_login", teacherLogin);
 
         if (!query.exec())
             return false;
@@ -1205,7 +1254,7 @@ bool AppDatabase::deletePracticeSlot(int id, string teacherLogin)
         return true;
 
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -1214,150 +1263,186 @@ bool AppDatabase::insertPracticeBooking(PracticeBooking &booking)
 {
     try {
         SQLite::Statement query {db, "INSERT INTO practice_bookings VALUES(?,?)"};
-        query.bind(1, booking.student_login);
-        query.bind(2, booking.slot_id);
+        query.bind(1, booking.studentId);
+        query.bind(2, booking.slotId);
 
         if (!query.exec())
             return false;
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
-bool AppDatabase::deletePracticeBooking(int id, string studentLogin)
+bool AppDatabase::deletePracticeBooking(int id)
 {
     try {
         // SQLite::Statement query {db, "INSERT OR REPLACE INTO users_errors VALUES(?,?,?)"};
         SQLite::Statement query {db, "DELETE FROM practice_bookings "
-                                    "WHERE id = :id "
-                                    "AND student_login = :student_login"};
+                                    "WHERE id = :id"};
         query.bind(":id", id);
-        query.bind(":student_login", studentLogin);
 
         if (!query.exec())
             return false;
 
         return true;
     } catch(std::exception &e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return false;
     }
 }
 
+shared_ptr<PracticeSlot> AppDatabase::getPracticeSlot(int id)
+{
+    try {
+        SQLite::Statement query {db, "SELECT teacher_id, time FROM practice_slots "
+                                    "WHERE id = :id"};
+        query.bind(":id", id);
+
+        shared_ptr<PracticeSlot> slot(new PracticeSlot);
+
+        while (query.executeStep()) {
+            slot->teacherId = query.getColumn(0).getInt();
+            slot->time = query.getColumn(1).getInt();
+        }
+        return slot;
+    } catch(std::exception &e) {
+        std::cerr << "exception: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
+shared_ptr<PracticeBooking> AppDatabase::getPracticeBooking(int id)
+{
+    try {
+        SQLite::Statement query {db, "SELECT student_id, slot_id FROM practice_bookings "
+                                    "WHERE id = :id"};
+        query.bind(":id", id);
+
+        shared_ptr<PracticeBooking> booking(new PracticeBooking);
+
+        while (query.executeStep()) {
+            booking->studentId = query.getColumn(0).getInt();
+            booking->slotId = query.getColumn(1).getInt();
+        }
+        return booking;
+    } catch(std::exception &e) {
+        std::cerr << "exception: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
 shared_ptr<vector<FreePracticeSlot>>
-AppDatabase::getFreePracticeSlotsForStudent(string studentLogin)
+AppDatabase::getFreePracticeSlotsForStudent(int studentId)
 {
     try {
         SQLite::Statement query(db,
                                 "SELECT ps.id, ps.time "
                                 "FROM practice_slots ps "
-                                "JOIN students s ON ps.teacher_login = s.assigned_teacher "
-                                "WHERE s.user_login = :student_login "
+                                "JOIN students s ON ps.teacher_id = s.assigned_teacher "
+                                "WHERE s.user_id = :student_id "
                                 "AND NOT EXISTS ("
                                 "   SELECT 1 FROM practice_bookings pb "
                                 "   WHERE pb.slot_id = ps.id"
                                 ")");
 
-        query.bind(":student_login", studentLogin);
+        query.bind(":student_id", studentId);
 
-        shared_ptr<vector<FreePracticeSlot>> freeSlots;
+        shared_ptr<vector<FreePracticeSlot>> freeSlots(new vector<FreePracticeSlot>);
         while (query.executeStep()) {
             FreePracticeSlot slot;
-            slot.id = query.getColumn(0).getInt();
+            slot.slotId = query.getColumn(0).getInt();
             slot.time = query.getColumn(1).getInt();
             freeSlots->push_back(slot);
         }
         return freeSlots;
     } catch (const std::exception& e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
 
 shared_ptr<vector<BookedPracticeSlot>>
-AppDatabase::getBookedPracticeSlotsForStudent(string studentLogin)
+AppDatabase::getBookedPracticeSlotsForStudent(int studentId)
 {
     try {
         SQLite::Statement query(db,
-                                "SELECT ps.id, pb.id, pb.student_login, u.name, ps.time "
+                                "SELECT ps.id, pb.id, pb.student_id, u.name, ps.time "
                                 "FROM practice_slots ps "
-                                "JOIN students s ON ps.teacher_login = s.assigned_teacher "
+                                "JOIN students s ON ps.teacher_id = s.assigned_teacher "
                                 "JOIN practice_bookings pb ON ps.id = pb.slot_id "
-                                "JOIN users u ON pb.student_login = u.login "
-                                "WHERE s.user_login = :student_login");
+                                "JOIN users u ON pb.student_id = u.id "
+                                "WHERE s.user_id = :student_id");
 
-        query.bind(":student_login", studentLogin);
+        query.bind(":student_id", studentId);
 
-        shared_ptr<vector<BookedPracticeSlot>> bookedSlots;
+        shared_ptr<vector<BookedPracticeSlot>> bookedSlots(new vector<BookedPracticeSlot>);
         while (query.executeStep()) {
             BookedPracticeSlot slot;
-            slot.id = query.getColumn(0).getInt();
-            slot.booking_id = query.getColumn(1).getInt();
-            slot.studentLogin = query.getColumn(2).getString();
+            slot.slotId = query.getColumn(0).getInt();
+            slot.bookingId = query.getColumn(1).getInt();
+            slot.studentId = query.getColumn(2).getInt();
             slot.studentName = query.getColumn(3).getString();
             slot.time = query.getColumn(4).getInt();
             bookedSlots->push_back(slot);
         }
         return bookedSlots;
     } catch (const std::exception& e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
 
 shared_ptr<vector<FreePracticeSlot>>
-AppDatabase::getFreePracticeSlotsByTeacher(string teacherLogin)
+AppDatabase::getFreePracticeSlotsByTeacher(int teacherId)
 {
     try {
         SQLite::Statement query(db,
                                 "SELECT id, time FROM practice_slots "
-                                "WHERE teacher_login = :teacher_login "
+                                "WHERE teacher_id = :teacher_id "
                                 "AND id NOT IN (SELECT slot_id FROM practice_bookings)");
-        query.bind(":teacher_login", teacherLogin);
+        query.bind(":teacher_id", teacherId);
 
-        shared_ptr<vector<FreePracticeSlot>> freeSlots;
+        shared_ptr<vector<FreePracticeSlot>> freeSlots(new vector<FreePracticeSlot>);
         while (query.executeStep()) {
             FreePracticeSlot slot;
-            slot.id = query.getColumn(0);
-            slot.time = query.getColumn(1);
+            slot.slotId = query.getColumn(0).getInt();
+            slot.time = query.getColumn(1).getInt();
             freeSlots->push_back(slot);
         }
         return freeSlots;
     } catch (const std::exception& e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }
 
 shared_ptr<vector<BookedPracticeSlot>>
-AppDatabase::getBookedPracticeSlotsByTeacher(string teacherLogin)
+AppDatabase::getBookedPracticeSlotsByTeacher(int teacherId)
 {
     try {
         SQLite::Statement query(db,
-                                "SELECT ps.id, pb.id, pb.student_login, u.name, ps.time "
+                                "SELECT ps.id, pb.id, pb.student_id, u.name, ps.time "
                                 "FROM practice_slots ps "
                                 "JOIN practice_bookings pb ON ps.id = pb.slot_id "
-                                "JOIN users u ON pb.student_login = u.login "
-                                "WHERE ps.teacher_login = :teacher_login");
-        query.bind(":teacher_login", teacherLogin);
+                                "JOIN users u ON pb.student_id = u.id "
+                                "WHERE ps.teacher_id = :teacher_id");
+        query.bind(":teacher_id", teacherId);
 
-        query.bind(1, teacherLogin);
-
-        shared_ptr<vector<BookedPracticeSlot>> bookedSlots;
+        shared_ptr<vector<BookedPracticeSlot>> bookedSlots(new vector<BookedPracticeSlot>);
         while (query.executeStep()) {
             BookedPracticeSlot slot;
-            slot.id = query.getColumn(0);
-            slot.studentLogin = query.getColumn(1).getString();
+            slot.slotId = query.getColumn(0).getInt();
+            slot.studentId = query.getColumn(1).getInt();
             slot.studentName = query.getColumn(2).getString();
             slot.time = query.getColumn(3);
             bookedSlots->push_back(slot);
         }
         return bookedSlots;
     } catch (const std::exception& e) {
-        std::cerr << "exeption: " << e.what() << std::endl;
+        std::cerr << "exception: " << e.what() << std::endl;
         return nullptr;
     }
 }

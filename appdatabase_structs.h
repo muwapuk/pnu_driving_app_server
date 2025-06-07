@@ -14,8 +14,7 @@ enum Categories {
 }
 
 struct Question {
-    static const int MIN_QUESTION_NUM = 1;
-
+    int id;
     uint number;
     uint ticketId;
 
@@ -27,6 +26,7 @@ struct Question {
     uint rightAnswer;
 };
 struct User {
+    int id;
     std::string login;
     std::string password;
     std::string name;
@@ -39,43 +39,43 @@ struct User {
     } permissions = NONE;
 };
 struct Teacher {
-    std::string login;
+    int userId;
     std::string name;
     std::string car;
 };
 struct Student {
-    std::string login;
+    int userId;
     std::string name;
     std::string groupName;
     Teacher teacher;
 };
 struct Lecture {
-    std::string teacherLogin;
-    std::string groupId;
+    int teacherId;
+    int groupId;
     std::string title;
     std::string classroom;
     int time;
 };
 // Needed for inserting
 struct PracticeSlot {
-    std::string teacher_login;
+    int teacherId;
     int time;
 };
 struct PracticeBooking {
-    std::string student_login;
-    int slot_id;
+    int studentId;
+    int slotId;
 };
 //
 
 // Needed for selecting
 struct FreePracticeSlot {
-    int id;
+    int slotId;
     int time;
 };
 struct BookedPracticeSlot {
-    int id;
-    int booking_id;
-    std::string studentLogin;
+    int slotId;
+    int bookingId;
+    int studentId;
     std::string studentName;
     int time;
 };

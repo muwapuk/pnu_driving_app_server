@@ -33,8 +33,8 @@ public:
     static Result questionToJson(const Question &, nlohmann::json &);
 
     // User
-    static Result jsonToUser(const nlohmann::json &, User &);
-    static Result userToJson(const User &, nlohmann::json &);
+    // static Result jsonToUser(const nlohmann::json &, User &);
+    // static Result userToJson(const User &, nlohmann::json &);
 
     // Lecture
     static Result jsonToLecture(nlohmann::json &, Lecture &);

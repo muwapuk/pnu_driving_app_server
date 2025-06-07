@@ -41,8 +41,6 @@ int signIn(const http_request &req, bool &reload_nonce, std::string &token);
 
 bool checkPassword(const http_request &req, bool &reload_nonce);
 
-std::shared_ptr<pair<string, User::Permissions>> tokenToUserAndPermenissions(std::string token);
-
 } // namespace end
 
 

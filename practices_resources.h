@@ -11,10 +11,10 @@ namespace pr {
 class practices_resource : public http_resource
 {
     std::shared_ptr<http_response>
-    buildStudentGetPracticesResponse(const std::string &studentLogin);
+    buildStudentGetPracticesResponse(int studentId);
 
     std::shared_ptr<http_response>
-    buildTeacherGetPracticesResponse(const std::string &teacherLogin);
+    buildTeacherGetPracticesResponse(int teacherId);
 
     bool bookStudentForPractice();
     bool addSlotForPractice();

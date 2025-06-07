@@ -137,20 +137,21 @@ JsonConverter::Result JsonConverter::userToJson(const User &user, nlohmann::json
     return SUCCESS;
 }
 
+#endif
 JsonConverter::Result JsonConverter::jsonToLecture(nlohmann::json &j, Lecture &lecture)
 {
-    if (!j["teacher_login"].is_string()
-        || !j["group_name"].is_string()
-        || !j["thematic"].is_string()
-        || !j["cabinet"].is_number()
-        || !j["date"].is_number()
+    if (!j["teacher-id"].is_number()
+        || !j["group-id"].is_number()
+        || !j["classroom"].is_string()
+        || !j["title"].is_number()
+        || !j["time"].is_number()
         ) return CONVERTATION_ERROR;
 
-    j["teacher_login"].get_to(lecture.teacher_login);
-    j["group_name"].get_to(lecture.group_name);
-    j["thematic"].get_to(lecture.thematic);
-    j["cabinet"].get_to(lecture.cabinet);
-    j["date"].get_to(lecture.date);
+    j["teacher-id"].get_to(lecture.teacherId);
+    j["group-id"].get_to(lecture.groupId);
+    j["classroom"].get_to(lecture.classroom);
+    j["title"].get_to(lecture.title);
+    j["time"].get_to(lecture.time);
 
 
     return SUCCESS;
@@ -159,39 +160,38 @@ JsonConverter::Result JsonConverter::jsonToLecture(nlohmann::json &j, Lecture &l
 JsonConverter::Result JsonConverter::lectureToJson(Lecture &lecture, nlohmann::json &j)
 {
     json lectureJson = {
-        {"teacher_login", lecture.teacher_login},
-        {"group_name", lecture.group_name},
-        {"thematic", lecture.thematic},
-        {"cabinet", lecture.cabinet},
-        {"date", lecture.date}
+        {"teacher-id", lecture.teacherId},
+        {"group-id", lecture.groupId},
+        {"classroom", lecture.classroom},
+        {"title", lecture.title},
+        {"time", lecture.time}
     };
 
     j.merge_patch(lectureJson);
 
     return SUCCESS;
 }
-#endif
 
 JsonConverter::Result JsonConverter::jsonToPracticeSlot(nlohmann::json &j, PracticeSlot &slot)
 {
-    if (!j["login"].is_string()
+    if (!j["teacher-id"].is_number()
         || !j["time"].is_number()
     ) return CONVERTATION_ERROR;
 
-    j["login"].get_to(booking.teacher_login);
-    j["time"].get_to(booking.time);
+    j["teacher-id"].get_to(slot.teacherId);
+    j["time"].get_to(slot.time);
 
     return SUCCESS;
 }
 
 JsonConverter::Result JsonConverter::jsonToPracticeBooking(nlohmann::json &j, PracticeBooking &booking)
 {
-    if (!j["login"].is_string()
+    if (!j["student-id"].is_string()
         || !j["time"].is_number()
         ) return CONVERTATION_ERROR;
 
-    j["login"].get_to(booking.student_login);
-    j["time"].get_to(booking.slot_id);
+    j["student-id"].get_to(booking.studentId);
+    j["slot-id"].get_to(booking.slotId);
 
     return SUCCESS;
 }

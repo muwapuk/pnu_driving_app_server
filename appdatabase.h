@@ -25,7 +25,7 @@ class AppDatabase
     bool createTables();
     bool createTriggers();
 
-    bool decreaseQuestionId(int id);
+    bool decreaseintnId(int id);
 public:
     // Singleton preparation
     static AppDatabase &getInstance();
@@ -40,77 +40,80 @@ public:
     shared_ptr<vector<pair<int, int>>> getTicketNumIdPairsByCategory(tickets::Categories category);
 
 // Question table accessors
+    int insertQuestion(Question &);
+    bool changeQuestion(int id, Question &);
+    bool deleteQuestion(int id);
+
+    shared_ptr<Question> getQuestion(int id);
+    int getRightAnswer(int id);
     shared_ptr<vector<string>> getQuestionsSubjects();
     shared_ptr<vector<pair<int, int>>> getQuestionNumIdPairsByTicket(int ticketId);
     shared_ptr<vector<int>> getQuestionIdVecBySubject(string subject);
 
-    int insertQuestion(Question &);
-    bool changeQuestion(int id, Question &);
-    bool deleteQuestion(int id);
-    shared_ptr<Question> getQuestion(int id);
-    int getRightAnswer(int id);
-
 // Groups table accessors
     bool insertGroup(string groupName);
     bool deleteGroup(int id);
-    int getGroupIdByStudent(string login);
+    int getGroupIdByStudent(int studentId);
     shared_ptr<string> getGroupName(int id);
     int getGroupId(string groupName);
     shared_ptr<vector<pair<int, string>>> getGroups();
 
 // Users table accessors
     bool insertUser(User &);
-    bool deleteUser(string login);
-    bool changeUserName(string login, string newName);
-    bool changeUserPassword(string login, string newPass);
-    bool changeUserPermissions(string login, User::Permissions newPerm);
+    bool deleteUser(int id);
+    bool changeUserName(int id, string newName);
+    bool changeUserPassword(int id, string newPass);
+    bool changeUserPermissions(int id, User::Permissions newPerm);
 
     // Make student
-    bool setUserStudent(string login, int groupId, string assignedTeacherLogin);
-    bool changeStudentGroup(string studentLogin, int groupId);
-    bool assignStudentTeacher(string studentLogin, string teacherLogin);
+    bool setUserStudent(int id, int groupId, int assignedTeacherId);
+    bool changeStudentGroup(int studentId, int groupId);
+    bool assignStudentToTeacher(int studentId, int teacherId);
     // Make teacher
-    bool setUserTeacher(string login, string car);
+    bool setUserTeacher(int id, string car);
 
     // Getters
-    shared_ptr<User> getUser(string login);
-    shared_ptr<string> getUserName(string login);
-    shared_ptr<string> getUserPassword(string login);
-    User::Permissions getUserPermissions(string login);
+    int getUserIdByLogin(string login);
+    shared_ptr<User> getUser(int id);
+    shared_ptr<string> getUserName(int id);
+    shared_ptr<string> getUserPassword(int id);
+    User::Permissions getUserPermissions(int id);
     shared_ptr<vector<User>> getUsersList(int startRow, int amount);
     shared_ptr<vector<Student>> getStudentsList(int startRow, int amount);
     shared_ptr<vector<Student>> getStudentsListByGroup(int groupId, int startRow, int amount);
     shared_ptr<vector<Teacher>> getTeachersList(int startRow, int amount);
-    bool isUserExist(string login);
+    bool isUserExist(int id);
 
 // Tokens table accessors
-    bool addToken(string token, string login);
+    bool addToken(string token, int user_id);
     bool deleteToken(string token);
-    bool deleteTokenByUser(string login);
+    bool deleteTokenByUser(int id);
     bool deleteTokensByTime(int time);
-    shared_ptr<pair<string, User::Permissions>> getLoginAndPermissionsByToken(string token);
+    shared_ptr<pair<int, User::Permissions>> getUserIdAndPermissionsByToken(string token);
 
 // Lectures table accessors
     bool insertLecture(Lecture &);
     bool deleteLecture(int id);
-    shared_ptr<vector<Lecture>> getLecturesByTeacher(string teacherLogin);
+    shared_ptr<vector<Lecture>> getLecturesByTeacher(int teacherId);
     shared_ptr<vector<Lecture>> getLecturesByGroup(int groupId);
 
 // Practices tables accessors
 
     // Practice slots
     bool insertPracticeSlot(PracticeSlot &);
-    bool deletePracticeSlot(int id, string teacherLogin);
+    bool deletePracticeSlot(int id);
 
     // Practice bookings
     bool insertPracticeBooking(PracticeBooking &);
-    bool deletePracticeBooking(int id, string studentLogin);
+    bool deletePracticeBooking(int id);
 
     // Practices getters
-    shared_ptr<vector<FreePracticeSlot>> getFreePracticeSlotsForStudent(string studentLogin);
-    shared_ptr<vector<BookedPracticeSlot>> getBookedPracticeSlotsForStudent(string studentLogin);
-    shared_ptr<vector<FreePracticeSlot>> getFreePracticeSlotsByTeacher(string teacherLogin);
-    shared_ptr<vector<BookedPracticeSlot>> getBookedPracticeSlotsByTeacher(string teacherLogin);
+    shared_ptr<PracticeSlot> getPracticeSlot(int id);
+    shared_ptr<PracticeBooking> getPracticeBooking(int id);
+    shared_ptr<vector<FreePracticeSlot>> getFreePracticeSlotsForStudent(int studentId);
+    shared_ptr<vector<BookedPracticeSlot>> getBookedPracticeSlotsForStudent(int studentId);
+    shared_ptr<vector<FreePracticeSlot>> getFreePracticeSlotsByTeacher(int teacherId);
+    shared_ptr<vector<BookedPracticeSlot>> getBookedPracticeSlotsByTeacher(int teacherId);
 
 private:
     SQLite::Database db = SQLite::Database(DATABASE_NAME, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);

@@ -34,6 +34,7 @@ int main(int, char**)
     ///
 
     User u1 {
+        0,
         "User",
         "Password",
         "Name",
