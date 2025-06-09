@@ -50,6 +50,7 @@ struct Student {
     Teacher teacher;
 };
 struct Lecture {
+    int id;
     int teacherId;
     int groupId;
     std::string title;

@@ -24,8 +24,6 @@ class AppDatabase
     // If not exist
     bool createTables();
     bool createTriggers();
-
-    bool decreaseintnId(int id);
 public:
     // Singleton preparation
     static AppDatabase &getInstance();
@@ -73,8 +71,8 @@ public:
     bool setUserTeacher(int id, string car);
 
     // Getters
-    int getUserIdByLogin(string login);
     shared_ptr<User> getUser(int id);
+    int getUserIdByLogin(string login);
     shared_ptr<string> getUserName(int id);
     shared_ptr<string> getUserPassword(int id);
     User::Permissions getUserPermissions(int id);
@@ -87,13 +85,14 @@ public:
 // Tokens table accessors
     bool addToken(string token, int user_id);
     bool deleteToken(string token);
-    bool deleteTokenByUser(int id);
+    bool deleteTokenByUser(int userId);
     bool deleteTokensByTime(int time);
     shared_ptr<pair<int, User::Permissions>> getUserIdAndPermissionsByToken(string token);
 
 // Lectures table accessors
     bool insertLecture(Lecture &);
     bool deleteLecture(int id);
+    shared_ptr<Lecture> getLecture(int id);
     shared_ptr<vector<Lecture>> getLecturesByTeacher(int teacherId);
     shared_ptr<vector<Lecture>> getLecturesByGroup(int groupId);
 
@@ -117,9 +116,6 @@ public:
 
 private:
     SQLite::Database db = SQLite::Database(DATABASE_NAME, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
-
-    uint ticketsABamount = 0;
-    uint ticketsCDamount = 0;
 };
 
 inline AppDatabase &AppDB(){

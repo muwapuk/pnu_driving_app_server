@@ -65,25 +65,23 @@ JsonConverter::Result JsonConverter::intToJsonValue(std::string key, int obj, nl
 
 JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question &question)
 {
-    if (!j["ticketNum"].is_number()
-     || !j["questionNum"].is_number()
+    if (!j["ticket-id"].is_number()
+     || !j["number"].is_number()
      || !j["subject"].is_string()
      || !j["image"].is_string()
-     || !j["questionText"].is_string()
+     || !j["question-text"].is_string()
      || !j["answers"].is_string()
-     || !j["rightAnswer"].is_number()
+     || !j["right-answer"].is_number()
      || !j["comment"].is_string()
     ) return CONVERTATION_ERROR;
-
-
 
     j["ticket-id"].get_to(question.ticketId);
     j["number"].get_to(question.number);
     j["subject"].get_to(question.subject);
     j["image"].get_to(question.image_base64);
-    j["questionText"].get_to(question.questionText);
+    j["question-text"].get_to(question.questionText);
     j["answers"].get_to(question.answers);
-    j["rightAnswer"].get_to(question.rightAnswer);
+    j["right-answer"].get_to(question.rightAnswer);
     j["comment"].get_to(question.comment);
 
     return SUCCESS;
@@ -92,13 +90,14 @@ JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question 
 JsonConverter::Result JsonConverter::questionToJson(const Question &question, nlohmann::json &j)
 {
     json questionJson = {
-        {"ticket-id", question.ticketId},
+        {"id", question.id},
         {"number", question.number},
+        {"ticket-id", question.ticketId},
         {"subject", question.subject},
         {"image", question.image_base64},
         {"question-text", question.questionText},
         {"answers", question.answers},
-        {"rightAnswer", question.rightAnswer},
+        {"right-answer", question.rightAnswer},
         {"comment", question.comment}
     };
 

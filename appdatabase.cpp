@@ -128,11 +128,10 @@ bool AppDatabase::createTriggers()
             "CREATE TRIGGER IF NOT EXISTS tickets_insert_range_check "
             "BEFORE INSERT ON tickets "
             "BEGIN "
-            "   SELECT COALESCE(MAX(number), 0) INTO @max_number FROM tickets;"
             "   SELECT"
             "       CASE"
-            "           WHEN NEW.number NOT BETWEEN 1 AND (@max_number + 1) THEN"
-            "               RAISE(ABORT, 'Ticket number out of range. Must be between 1 and ' || (@max_number + 1))"
+            "           WHEN NEW.number NOT BETWEEN 1 AND (SELECT COALESCE(MAX(number), 0) + 1 FROM tickets) THEN"
+            "               RAISE(ABORT, 'Ticket number out of range.')"
             "       END;"
             "END;"
         );
@@ -140,52 +139,42 @@ bool AppDatabase::createTriggers()
         db.exec (
             "CREATE TRIGGER IF NOT EXISTS tickets_numbers_shift_on_insert "
             "BEFORE INSERT ON tickets "
+            "WHEN NEW.number <= (SELECT COALESCE(MAX(number), 0) FROM tickets) + 1 "
             "BEGIN "
-            "   SELECT COALESCE(MAX(number), 0) INTO @max_number FROM tickets;"
-            "   IF NEW.number <= @max_number THEN "
-            "       UPDATE tickets "
-            "       SET number = number + 1 "
-            "       WHERE number >= NEW.number;"
-            "   END IF;"
+            "   UPDATE tickets "
+            "   SET number = number + 1 "
+            "   WHERE number >= NEW.number;"
             "END;"
         );
         // Shift tickets numbers on deletion
         db.exec (
             "CREATE TRIGGER IF NOT EXISTS tickets_numbers_shift_on_delete "
             "AFTER DELETE ON tickets "
+            "WHEN OLD.number < (SELECT COALESCE(MAX(number), 0) FROM tickets) "
             "BEGIN "
-            "SELECT COALESCE(MAX(number), 0) INTO @current_max FROM tickets;"
-            "IF OLD.number < @current_max THEN"
-            "   UPDATE tickets"
-            "   SET number = number - 1"
-            "   WHERE number > OLD.number;"
-            "   END IF;"
+            "    UPDATE tickets "
+            "    SET number = number - 1 "
+            "    WHERE number > OLD.number;"
             "END;"
         );
         // Abort insertion of question with nummber < 1 or > max of existing number + 1
         db.exec (
             "CREATE TRIGGER IF NOT EXISTS questions_insert_range_check "
             "BEFORE INSERT ON questions "
+            "WHEN NEW.number NOT BETWEEN 1 AND (SELECT COALESCE(MAX(number), 0) + 1 FROM questions) "
             "BEGIN "
-            "   SELECT COALESCE(MAX(number), 0) INTO @max_number FROM questions;"
-            "   SELECT"
-            "       CASE"
-            "           WHEN NEW.number NOT BETWEEN 1 AND (@max_number + 1) THEN"
-            "               RAISE(ABORT, 'Ticket number out of range. Must be between 1 and ' || (@max_number + 1))"
-            "       END;"
+            "    SELECT RAISE(ABORT, 'Question number out of range.'); "
             "END;"
         );
         // Shift questions numbers on insertion of a new one
         db.exec (
             "CREATE TRIGGER IF NOT EXISTS questions_numbers_shift_on_insert "
             "BEFORE INSERT ON questions "
+            "WHEN NEW.number <= (SELECT COALESCE(MAX(number), 0) FROM questions) + 1 "
             "BEGIN "
-            "   SELECT COALESCE(MAX(number), 0) INTO @max_number FROM questions;"
-            "   IF NEW.number <= @max_number THEN "
-            "       UPDATE questions "
-            "       SET number = number + 1 "
-            "       WHERE number >= NEW.number;"
-            "   END IF;"
+            "    UPDATE questions "
+            "    SET number = number + 1 "
+            "    WHERE number >= NEW.number;"
             "END;"
         );
         // Shift questions numbers on updating one's number
@@ -194,51 +183,43 @@ bool AppDatabase::createTriggers()
             "BEFORE UPDATE ON questions "
             "WHEN OLD.number != NEW.number "
             "BEGIN "
-            "   SELECT COALESCE(MAX(number), 0) INTO @max_number FROM questions;"
-            "   SELECT CASE "
-            "       WHEN NEW.number NOT BETWEEN 1 AND (@max_number + 1) THEN "
-            "           RAISE(ABORT, 'Question number out of range') "
-            "   END;"
-            "   IF NEW.number > OLD.number THEN "
-            "       UPDATE questions "
-            "       SET number = number - 1 "
-            "       WHERE number > OLD.number AND number <= NEW.number "
-            "       AND id != OLD.id;  -- Exclude the question being updated "
-            "   ELSE "
-            "       UPDATE questions "
-            "       SET number = number + 1 "
-            "       WHERE number >= NEW.number AND number < OLD.number "
-            "       AND id != OLD.id;  -- Exclude the question being updated "
-            "   END IF;"
+            "    SELECT CASE "
+            "        WHEN NEW.number NOT BETWEEN 1 AND (SELECT COALESCE(MAX(number), 0) FROM questions) + 1 THEN "
+            "            RAISE(ABORT, 'Question number out of range') "
+            "    END;"
+            "    UPDATE questions "
+            "    SET number = CASE "
+            "        WHEN NEW.number > OLD.number AND number > OLD.number AND number <= NEW.number AND id != OLD.id THEN number - 1 "
+            "        WHEN NEW.number < OLD.number AND number >= NEW.number AND number < OLD.number AND id != OLD.id THEN number + 1 "
+            "        ELSE number "
+            "    END;"
             "END;"
         );
         // Shift questions numbers on deletion
         db.exec (
             "CREATE TRIGGER IF NOT EXISTS questions_numbers_shift_on_delete "
             "AFTER DELETE ON questions "
+            "WHEN OLD.number < (SELECT COALESCE(MAX(number), 0) FROM questions) "
             "BEGIN "
-            "SELECT COALESCE(MAX(number), 0) INTO @current_max FROM questions;"
-            "IF OLD.number < @current_max THEN"
-            "   UPDATE questions"
-            "   SET number = number - 1"
-            "   WHERE number > OLD.number;"
-            "   END IF;"
+            "    UPDATE questions "
+            "    SET number = number - 1 "
+            "    WHERE number > OLD.number;"
             "END;"
         );
         // Check students book with their assigned teacher
         db.exec (
             "CREATE TRIGGER IF NOT EXISTS assigned_teacher_check "
             "BEFORE INSERT ON practice_bookings "
+            "WHEN NOT EXISTS ("
+            "    SELECT 1 FROM students "
+            "    WHERE user_id = NEW.student_id "
+            "    AND assigned_teacher = ("
+            "        SELECT teacher_id FROM practice_slots "
+            "        WHERE id = NEW.slot_id"
+            "    )"
+            ") "
             "BEGIN "
-            "   SELECT RAISE(ABORT, 'Student must book with assigned teacher only') "
-            "   WHERE NOT EXISTS ("
-            "       SELECT 1 FROM students "
-            "           WHERE user_id = NEW.student_id "
-            "           AND assigned_teacher = ("
-            "               SELECT teacher_id FROM practice_slots "
-            "               WHERE id = NEW.slot_id"
-            "           )"
-            "   )"
+            "    SELECT RAISE(ABORT, 'Student must book with assigned teacher only'); "
             "END;"
         ); 
 
@@ -256,7 +237,7 @@ bool AppDatabase::createTriggers()
 int AppDatabase::insertTicket(tickets::Categories category, int num)
 {
     try {
-        SQLite::Statement query {db, "INSERT INTO tickets VALUES (?,?) RETURNING id"};
+        SQLite::Statement query {db, "INSERT INTO tickets VALUES (NULL, ?,?) RETURNING id"};
 
         query.bind(1, category);
         query.bind(2, num);
@@ -498,7 +479,7 @@ int AppDatabase::getRightAnswer(int id)
 bool AppDatabase::insertGroup(string groupName)
 {
     try {
-        SQLite::Statement query {db, "INSERT OR IGNORE INTO groups VALUES (?)"};
+        SQLite::Statement query {db, "INSERT OR IGNORE INTO groups VALUES (NULL, ?)"};
         query.bind(1, groupName);
 
         if(!query.exec())
@@ -601,7 +582,7 @@ AppDatabase::getGroups()
 bool AppDatabase::insertUser(User &user)
 {
     try {
-        SQLite::Statement query {db, "INSERT OR IGNORE INTO users VALUES (?,?,?,?)"};
+        SQLite::Statement query {db, "INSERT OR IGNORE INTO users VALUES (NULL, ?,?,?,?)"};
         query.bind(1, user.login);
         query.bind(2, user.password);
         query.bind(3, user.name);
@@ -1083,6 +1064,24 @@ bool AppDatabase::deleteToken(string token)
     }
 }
 
+bool AppDatabase::deleteTokenByUser(int userId)
+{
+    try {
+        SQLite::Statement query {db, string("DELETE FROM tokens "
+                                           "WHERE user_id = :user_id")};
+        query.bind(":user_id", userId);
+
+        if (!query.exec())
+            return false;
+
+        return true;
+
+    } catch(std::exception &e) {
+        std::cerr << "exception: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 bool AppDatabase::deleteTokensByTime(int time)
 {
     try {
@@ -1131,7 +1130,7 @@ AppDatabase::getUserIdAndPermissionsByToken(string token)
 bool AppDatabase::insertLecture(Lecture &lecture)
 {
     try {
-        SQLite::Statement query {db, "INSERT INTO lectures VALUES(?,?,?,?,?)"};
+        SQLite::Statement query {db, "INSERT INTO lectures VALUES(NULL, ?,?,?,?,?)"};
         query.bind(1, lecture.teacherId);
         query.bind(2, lecture.groupId);
         query.bind(3, lecture.title);
@@ -1167,6 +1166,35 @@ bool AppDatabase::deleteLecture(int id)
     }
 }
 
+shared_ptr<Lecture> AppDatabase::getLecture(int id)
+{
+    try {
+        SQLite::Statement query {db, "SELECT * FROM lectures "
+                                    "WHERE id = :id"};
+        query.bind(":id", id);
+
+        shared_ptr<Lecture> lecture;
+
+        if (!query.executeStep()) {
+            return nullptr;
+        }
+
+        lecture  = shared_ptr<Lecture>(new Lecture {
+            id,
+            query.getColumn(1).getInt(),
+            query.getColumn(2).getInt(),
+            query.getColumn(3).getString(),
+            query.getColumn(4).getString(),
+            query.getColumn(5).getInt(),
+        });
+
+        return lecture;
+    } catch(std::exception &e) {
+        std::cerr << "exception: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
 shared_ptr<vector<Lecture>>
 AppDatabase::getLecturesByTeacher(int teacherId)
 {
@@ -1181,9 +1209,10 @@ AppDatabase::getLecturesByTeacher(int teacherId)
             lectures->push_back(Lecture {
                 query.getColumn(0).getInt(),
                 query.getColumn(1).getInt(),
-                query.getColumn(2).getString(),
+                query.getColumn(2).getInt(),
                 query.getColumn(3).getString(),
-                query.getColumn(4).getInt(),
+                query.getColumn(4).getString(),
+                query.getColumn(5).getInt(),
             });
         }
 
@@ -1208,9 +1237,10 @@ AppDatabase::getLecturesByGroup(int groupId)
             lectures->push_back(Lecture {
                 query.getColumn(0).getInt(),
                 query.getColumn(1).getInt(),
-                query.getColumn(2).getString(),
+                query.getColumn(2).getInt(),
                 query.getColumn(3).getString(),
-                query.getColumn(4).getInt(),
+                query.getColumn(4).getString(),
+                query.getColumn(5).getInt(),
             });
         }
 
@@ -1225,7 +1255,7 @@ AppDatabase::getLecturesByGroup(int groupId)
 bool AppDatabase::insertPracticeSlot(PracticeSlot &slot)
 {
     try {
-        SQLite::Statement query {db, "INSERT INTO practice_slots VALUES(?,?)"};
+        SQLite::Statement query {db, "INSERT INTO practice_slots VALUES(NULL, ?,?)"};
         query.bind(1, slot.teacherId);
         query.bind(2, slot.time);
 
@@ -1262,7 +1292,7 @@ bool AppDatabase::deletePracticeSlot(int id)
 bool AppDatabase::insertPracticeBooking(PracticeBooking &booking)
 {
     try {
-        SQLite::Statement query {db, "INSERT INTO practice_bookings VALUES(?,?)"};
+        SQLite::Statement query {db, "INSERT INTO practice_bookings VALUES(NULL, ?,?)"};
         query.bind(1, booking.studentId);
         query.bind(2, booking.slotId);
 

@@ -36,8 +36,6 @@ shared_ptr<http_response> practices_resource::render_PUT_practiceSlot(const http
     auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
     if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (uidAndPerms->second == User::NONE)
-        return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
     if (uidAndPerms->second != User::TEACHER)
         return shared_ptr<http_response>(new string_response("Forbidden!", 403));
     PracticeSlot slot;
@@ -59,8 +57,7 @@ shared_ptr<http_response> practices_resource::render_POST_practiceBooking(const 
     auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
     if (!uidAndPerms)
         return shared_ptr<http_response>(new string_response("Bad Token", 401));
-    if (uidAndPerms->second == User::NONE
-     || uidAndPerms->second != User::STUDENT)
+    if (uidAndPerms->second != User::STUDENT)
         return shared_ptr<http_response>(new string_response("Forbidden", 403));
     PracticeBooking booking;
     json j_booking;
@@ -86,10 +83,12 @@ shared_ptr<http_response> practices_resource::render_DELETE_practiceSlot(const h
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     int requestId = std::stoi(req.get_arg("id"));
+    auto practiceSlot = AppDB().getPracticeSlot(requestId);
+    if (!practiceSlot)
+        return shared_ptr<http_response>(new string_response("Lecture not found!", 404));
     if (uidAndPerms->second == User::SUPERUSER
-     || AppDB().getPracticeSlot(requestId)->teacherId == uidAndPerms->first) {
-        if(!AppDB().deletePracticeSlot(requestId))
-            return shared_ptr<http_response>(new string_response("Slot not found!", 404));
+    || practiceSlot->teacherId == uidAndPerms->first) {
+        AppDB().deletePracticeSlot(requestId);
     } else {
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
     }
@@ -105,18 +104,59 @@ shared_ptr<http_response> practices_resource::render_DELETE_practiceBooking(cons
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     int requestId = std::stoi(req.get_arg("id"));
+    auto practiceBooking = AppDB().getPracticeBooking(requestId);
+    if (!practiceBooking)
+        return shared_ptr<http_response>(new string_response("Lecture not found!", 404));
     if (uidAndPerms->second == User::SUPERUSER
-     || AppDB().getPracticeBooking(requestId)->studentId == uidAndPerms->first) {
-        if(!AppDB().deletePracticeBooking(requestId))
-            return shared_ptr<http_response>(new string_response("Booking not found!", 404));
+    || practiceBooking->studentId == uidAndPerms->first) {
+        AppDB().deletePracticeBooking(requestId);
     } else {
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
     }
     return shared_ptr<http_response>(new string_response("SUCCESS"));
 }
-shared_ptr<http_response> practices_resource::render(const http_request &)
+shared_ptr<http_response> practices_resource::render(const http_request &req)
 {
-    return shared_ptr<http_response>(new string_response("Method not allowed", 405));
+    std::vector<std::string> path_pieces = req.get_path_pieces();
+
+    if (req.get_method() == "GET") {
+        // .../practices/by-student -> JSON
+        if (path_pieces.size() == 2 && path_pieces[0] == "practices" &&
+            path_pieces[1] == "by-student") {
+            return render_GET_slotsByStudent(req);
+        }
+        // .../practices/by-teacher -> JSON
+        else if (path_pieces.size() == 2 && path_pieces[0] == "practices" &&
+                 path_pieces[1] == "by-teacher") {
+            return render_GET_slotsByTeacher(req);
+        }
+    }
+    else if (req.get_method() == "PUT") {
+        // .../practices <- JSON
+        if (path_pieces.size() == 1 && path_pieces[0] == "practices") {
+            return render_PUT_practiceSlot(req);
+        }
+    }
+    else if (req.get_method() == "POST") {
+        // .../practices <- JSON
+        if (path_pieces.size() == 1 && path_pieces[0] == "practices") {
+            return render_POST_practiceBooking(req);
+        }
+    }
+    else if (req.get_method() == "DELETE") {
+        // .../practices/slots/{id|[0-9]+}
+        if (path_pieces.size() >= 3 && path_pieces[0] == "practices" &&
+            path_pieces[1] == "slots") {
+            return render_DELETE_practiceSlot(req);
+        }
+        // .../practices/bookings/{id|[0-9]+}
+        else if (path_pieces.size() >= 3 && path_pieces[0] == "practices" &&
+                 path_pieces[1] == "bookings") {
+            return render_DELETE_practiceBooking(req);
+        }
+    }
+
+    return std::shared_ptr<http_response>(new string_response("Not Found", 404));
 }
 
 shared_ptr<http_response>

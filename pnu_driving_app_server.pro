@@ -14,7 +14,7 @@ SOURCES += \
         lectures_resources.cpp \
         main.cpp \
         practices_resources.cpp \
-        questions_resources.cpp \
+        testing_resources.cpp \
         users_resources.cpp
 
 HEADERS += \
@@ -25,6 +25,6 @@ HEADERS += \
     jsonconverter.h \
     lectures_resources.h \
     practices_resources.h \
-    questions_resources.h \
+    testing_resources.h \
     users_resources.h
 

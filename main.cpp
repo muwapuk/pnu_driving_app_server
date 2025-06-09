@@ -1,32 +1,10 @@
 #include "appdatabase.h"
 #include "authentication_resourses.h"
+#include "lectures_resources.h"
 #include "practices_resources.h"
-#include "questions_resources.h"
+#include "testing_resources.h"
 #include "users_resources.h"
 #include <iostream>
-
-
-
-// void register_resources(webserver &server)
-// {
-
-// }
-// class digest_resource : public httpserver::http_resource {
-// public:
-//     std::shared_ptr<http_response> render_GET(const http_request& req) {
-//         if (req.get_digested_user() != "1") {
-//             return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("FAIL", "test@example.com", MY_OPAQUE, false));
-//         }
-//         else {
-//             std::cout << req.get_digested_user() << std::endl;
-//             bool reload_nonce = false;
-//             if(!req.check_digest_auth("test@example.com", "mypass", 300, &reload_nonce)) {
-//                 return std::shared_ptr<digest_auth_fail_response>(new digest_auth_fail_response("FAIL", "test@example.com", MY_OPAQUE, reload_nonce));
-//             }
-//         }
-//         return std::shared_ptr<string_response>(new string_response("SUCCESS", 200, "text/plain"));
-//     }
-// };
 
 int main(int, char**)
 {
@@ -43,33 +21,72 @@ int main(int, char**)
 
     AppDB();
 
-    ///
-    qr::questions_resource questions_src;
-    ur::users_resources user_src;
+    // Authentication resources
     auth::signUp_resource signUp_src;
     auth::signIn_resource signIn_src;
-    pr::practices_resource practices_src;
-
-    ws.register_resource("/questions", &questions_src, true);
-    ws.register_resource("/questions/categories/{category}/tickets/amount", &questions_src);
-    ws.register_resource("/questions/categories/{category}/tickets/{ticket|[0-9]+}/questions/amount", &questions_src);
-    ws.register_resource("/questions/categories/{category}/tickets/{ticket|[0-9]+}/questions/{question|[0-9]+}", &questions_src);
-
-    ws.register_resource("/questions/themes", &questions_src);
-    ws.register_resource("/questions/themes/{theme}/questions/ids", &questions_src);
-    ws.register_resource("/questions/themes/{theme}/questions/amount", &questions_src);
-
-    ws.register_resource("/users", &user_src, true);
-    ws.register_resource("/users/{page|[0-9]+}", &user_src);
 
     ws.register_resource("/users/signup", &signUp_src);
     ws.register_resource("/users/signin", &signIn_src);
 
-    ws.register_resource("/practices", &practices_src);
-    ws.register_resource("/practices/by-student/{student}", &practices_src);
-    ws.register_resource("/practices/by-teacher/{teacher}", &practices_src);
-    ws.register_resource("/practices/by-time/from/{fromTime|[0-9]+}/to/{toTime|[0-9]+}", &practices_src);
+    // Question resources
+    qr::subjects_resource subjects_res;
+    qr::questions_by_subject_resource questions_subj_res;
+    qr::tickets_by_category_resource tickets_cat_res;
+    qr::questions_by_ticket_resource questions_ticket_res;
+    qr::question_by_id_resource question_id_res;
+    qr::create_ticket_resource create_ticket_res;
+    qr::create_question_resource create_question_res;
+    qr::delete_ticket_resource delete_ticket_res;
 
+    // Get questions subjects
+    ws.register_resource("/testing/subjects", &subjects_res); // -> JSON [subject1, subject2...]
+
+    // Get questions number and id pairs from specific {subject}
+    ws.register_resource("/testing/subjects/{subject}/questions-list", &questions_subj_res); // GET -> JSON [{id, num}, id, num},...]
+
+    // Get ticket number and id pairs from specific {category}
+    ws.register_resource("/testing/categories/{category}/tickets", &tickets_cat_res); // GET -> JSON [{id, num}, id, num},...]
+
+    // Get questions number and id pair from specific {ticket}
+    ws.register_resource("/testing/tickets/by-id/{ticket_id}/questions-list", &questions_ticket_res); // GET -> JSON [{id, num}, id, num},...]
+
+    // Get or delete specific {question_id}
+    ws.register_resource("/testing/questions/by-id/{question_id}", &question_id_res); // GET -> JSON {question} | DELETE
+
+    // Create ticket in {category} with {number}
+    ws.register_resource("/testing/categories/{category}/tickets/{number}", &create_ticket_res); // PUT
+
+    // Create question in ticket with subject in json body
+    ws.register_resource("/testing/questions", &create_question_res); // PUT <- JSON {question}
+
+    // Delete {ticket}
+    ws.register_resource("/testing/tickets/by-id/{ticket_id}", &delete_ticket_res); // DELETE
+
+    // Practice resources
+    pr::student_slots_resource student_slots_res;
+    pr::teacher_slots_resource teacher_slots_res;
+    pr::create_slot_resource create_slot_res;
+    pr::create_booking_resource create_booking_res;
+    pr::delete_slot_resource delete_slot_res;
+    pr::delete_booking_resource delete_booking_res;
+
+    ws.register_resource("/practices/by-student", &student_slots_res);
+    ws.register_resource("/practices/by-teacher", &teacher_slots_res);
+    ws.register_resource("/practices/slots", &create_slot_res);
+    ws.register_resource("/practices/bookings", &create_booking_res);
+    ws.register_resource("/practices/slots/{slot_id}", &delete_slot_res);
+    ws.register_resource("/practices/bookings/{booking_id}", &delete_booking_res);
+
+    // Lecture resources
+    lc::lectures_by_teacher_resource lectures_teacher_res;
+    lc::lectures_by_group_resource lectures_group_res;
+    lc::create_lecture_resource create_lecture_res;
+    lc::delete_lecture_resource delete_lecture_res;
+
+    ws.register_resource("/lectures/by-teacher/{teacher_id}", &lectures_teacher_res);
+    ws.register_resource("/lectures/by-group/{group_id}", &lectures_group_res);
+    ws.register_resource("/lectures", &create_lecture_res);
+    ws.register_resource("/lectures/{lecture_id}", &delete_lecture_res);
     ws.start(true);
 
     return 0;
