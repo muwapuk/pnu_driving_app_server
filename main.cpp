@@ -48,10 +48,10 @@ int main(int, char**)
     ws.register_resource("/testing/categories/{category}/tickets", &tickets_cat_res); // GET -> JSON [{id, num}, id, num},...]
 
     // Get questions number and id pair from specific {ticket}
-    ws.register_resource("/testing/tickets/by-id/{ticket_id}/questions-list", &questions_ticket_res); // GET -> JSON [{id, num}, id, num},...]
+    ws.register_resource("/testing/tickets/by-id/{ticket-id}/questions-list", &questions_ticket_res); // GET -> JSON [{id, num}, id, num},...]
 
     // Get or delete specific {question_id}
-    ws.register_resource("/testing/questions/by-id/{question_id}", &question_id_res); // GET -> JSON {question} | DELETE
+    ws.register_resource("/testing/questions/by-id/{question-id}", &question_id_res); // GET/PATCH/DELETE -> JSON {question}
 
     // Create ticket in {category} with {number}
     ws.register_resource("/testing/categories/{category}/tickets/{number}", &create_ticket_res); // PUT
@@ -60,7 +60,7 @@ int main(int, char**)
     ws.register_resource("/testing/questions", &create_question_res); // PUT <- JSON {question}
 
     // Delete {ticket}
-    ws.register_resource("/testing/tickets/by-id/{ticket_id}", &delete_ticket_res); // DELETE
+    ws.register_resource("/testing/tickets/by-id/{ticket-id}", &delete_ticket_res); // DELETE
 
     // Practice resources
     pr::student_slots_resource student_slots_res;
@@ -88,6 +88,7 @@ int main(int, char**)
     ws.register_resource("/lectures", &create_lecture_res);
     ws.register_resource("/lectures/{lecture_id}", &delete_lecture_res);
     ws.start(true);
+
 
     return 0;
 }

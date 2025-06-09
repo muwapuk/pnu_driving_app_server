@@ -65,6 +65,21 @@ JsonConverter::Result JsonConverter::intToJsonValue(std::string key, int obj, nl
 
 JsonConverter::Result JsonConverter::jsonToQuestion(nlohmann::json &j, Question &question)
 {
+    // That is disgusting but I have no time to write a better solution
+    try {
+        std::string numb;
+        j["ticket-id"].get_to(numb);
+        j["ticket-id"] = std::stoi(numb);
+
+        j["number"].get_to(numb);
+        j["number"] = std::stoi(numb);
+
+        j["right-answer"].get_to(numb);
+        j["right-answer"] = std::stoi(numb);
+
+    } catch (std::exception) {
+        return CONVERTATION_ERROR;
+    }
     if (!j["ticket-id"].is_number()
      || !j["number"].is_number()
      || !j["subject"].is_string()

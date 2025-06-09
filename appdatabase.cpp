@@ -386,10 +386,10 @@ int AppDatabase::insertQuestion(Question &question)
 bool AppDatabase::changeQuestion(int id, Question &question)
 {
     try {
-        SQLite::Statement query {db, "UPDATE questions SET "
+         SQLite::Statement query {db, "UPDATE questions SET "
                                       "number = :number,"
                                       "subject = :subject,"
-                                      "image_base64 = :image_base64,"
+                                      "image = :image,"
                                       "question = :question,"
                                       "comment = :comment,"
                                       "answers = :answers,"
@@ -398,7 +398,7 @@ bool AppDatabase::changeQuestion(int id, Question &question)
         query.bind(":id", id);
         query.bind(":number", question.number);
         query.bind(":subject", question.subject);
-        query.bind(":image_base64", question.image_base64);
+        query.bind(":image", question.image_base64);
         query.bind(":question", question.questionText);
         query.bind(":comment", question.comment);
         query.bind(":answers", question.answers);
@@ -436,18 +436,20 @@ shared_ptr<Question> AppDatabase::getQuestion(int id)
                                            "WHERE id = :id")};
         query.bind(":id", id);
 
-        shared_ptr<Question> question(new Question);
-        while (query.executeStep()) {
-            question->id = query.getColumn(0).getInt();
-            question->number = query.getColumn(1).getInt();
-            question->ticketId = query.getColumn(2).getInt();
-            question->subject = query.getColumn(3).getString();
-            question->image_base64 = query.getColumn(4).getString();
-            question->questionText = query.getColumn(5).getString();
-            question->comment = query.getColumn(6).getString();
-            question->answers = query.getColumn(7).getString();
-            question->rightAnswer = query.getColumn(8).getInt();
+        if (!query.executeStep()) {
+            return nullptr;
         }
+
+        shared_ptr<Question> question(new Question);
+        question->id = query.getColumn(0).getInt();
+        question->number = query.getColumn(1).getInt();
+        question->ticketId = query.getColumn(2).getInt();
+        question->subject = query.getColumn(3).getString();
+        question->image_base64 = query.getColumn(4).getString();
+        question->questionText = query.getColumn(5).getString();
+        question->comment = query.getColumn(6).getString();
+        question->answers = query.getColumn(7).getString();
+        question->rightAnswer = query.getColumn(8).getInt();
 
         return question;
 

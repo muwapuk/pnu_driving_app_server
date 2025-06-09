@@ -20,19 +20,22 @@ protected:
     std::shared_ptr<http_response> render_GET_questionsListByTicket(const http_request &req);
     // .../testing/questions/by-id/{id|[0-9]+} -> json
     std::shared_ptr<http_response> render_GET_question(const http_request &req);
+    // // .../testing/questions/by-id/{id|[0-9]+}/image -> json
+    // std::shared_ptr<http_response> render_GET_questionImage(const http_request &req);
 
     // .../testing/categories/{category}/tickets/{number[0-9]+} -> json {id}
     std::shared_ptr<http_response> render_PUT_ticket(const http_request &req);
     // .../testing/questions <- json {question} -> json {id}
     std::shared_ptr<http_response> render_PUT_question(const http_request &req);
 
+
+    // .../testing/questions/by-id/{id|[0-9]+}
+    std::shared_ptr<http_response> render_PATCH_question(const http_request &req);
+
     // .../testing/tickets/by-id/{id|[0-9]+}
     std::shared_ptr<http_response> render_DELETE_ticket(const http_request &req);
     // .../testing/questions/by-id/{id|[0-9]+}
     std::shared_ptr<http_response> render_DELETE_question(const http_request &req);
-
-    // .../testing/questions/by-id/{id} <- json {question}
-    // std::shared_ptr<http_response> render_PATCH_question(const http_request &req);
 };
 // GET /testing/subjects -> json
 class subjects_resource : public testing_resources {
@@ -70,7 +73,7 @@ public:
         return render_PUT_ticket(req);
     }
 };
-// PUT /testing/questions/by-id/{id|[0-9]+}
+// PUT /testing/questions
 class create_question_resource : public testing_resources {
 public:
     std::shared_ptr<http_response> render_PUT(const http_request& req) override {
@@ -84,14 +87,24 @@ public:
         return render_DELETE_ticket(req);
     }
 };
-// GET/DELETE /testing/questions/by-id/{id|[0-9]+} -> json
+// GET/PATCH/DELETE /testing/questions/by-id/{id|[0-9]+} -> json
 class question_by_id_resource : public testing_resources {
 public:
     std::shared_ptr<http_response> render_GET(const http_request& req) override {
         return render_GET_question(req);
     }
+    std::shared_ptr<http_response> render_PATCH(const http_request& req) override {
+        return render_PATCH_question(req);
+    }
     std::shared_ptr<http_response> render_DELETE(const http_request& req) override {
         return render_DELETE_question(req);
+    }
+};
+// GET /testing/questions/by-id/{id|[0-9]+}/image -> json
+class question_image_by_id_resource : public testing_resources {
+public:
+    std::shared_ptr<http_response> render_GET(const http_request& req) override {
+        return render_GET_questionsListByTicket(req);
     }
 };
 

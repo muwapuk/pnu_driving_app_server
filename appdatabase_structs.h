@@ -12,7 +12,6 @@ enum Categories {
     CD,
 };
 }
-
 struct Question {
     int id;
     uint number;

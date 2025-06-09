@@ -84,16 +84,7 @@ testing_resources::render_GET_ticketsList(const http_request &req)
         return shared_ptr<http_response>(new string_response("No such category!", 404));
     auto tickets = AppDB().getTicketNumIdPairsByCategory(category);
     json j_tickets;
-    json j_ticket;
-    j_ticket["num"] = 3;
-    j_ticket["id"] = 1;
-    j_tickets.push_back(j_ticket);
-    j_ticket["num"] = 8;
-    j_ticket["id"] = 2;
-    j_tickets.push_back(j_ticket);
-    j_ticket["num"] = 2;
-    j_ticket["id"] = 3;
-    j_tickets.push_back(j_ticket);
+
     for (auto &numAndId : *tickets) {
         json j_ticket;
         j_ticket["num"] = numAndId.first;
@@ -104,7 +95,7 @@ testing_resources::render_GET_ticketsList(const http_request &req)
     JsonConverter::jsonObjectToJsonString(j_tickets, responseBody);
     return shared_ptr<http_response>(new string_response(responseBody, 200, "application/json"));
 }
-// .../testing/tickets/by-id/{id|[0-9]+}/questions-list -> json {questions[{num,id},...]}
+// .../testing/tickets/by-id/{ticket-id|[0-9]+}/questions-list -> json {questions[{num,id},...]}
 std::shared_ptr<http_response>
 testing_resources::render_GET_questionsListByTicket(const http_request &req)
 {
@@ -114,8 +105,9 @@ testing_resources::render_GET_questionsListByTicket(const http_request &req)
     if (uidAndPerms->second == User::NONE)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
-    auto questions = AppDB().getQuestionNumIdPairsByTicket(std::stoi(req.get_arg("id")));
+    auto questions = AppDB().getQuestionNumIdPairsByTicket(std::stoi(req.get_arg("ticket-id")));
     json j_questions;
+
     for (auto &numAndId : *questions) {
         json j_question;
         j_question["num"] = numAndId.first;
@@ -127,6 +119,22 @@ testing_resources::render_GET_questionsListByTicket(const http_request &req)
     return shared_ptr<http_response>(new string_response(responseBody, 200, "application/json"));
 }
 // GET .../testing/questions/by-id/{id|[0-9]+} -> json {question}
+
+// std::shared_ptr<http_response>
+// testing_resources::render_GET_question(const http_request &req)
+// {
+//     auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+//     if (!uidAndPerms)
+//         return shared_ptr<http_response>(new string_response("Bad Token", 401));
+//     if (uidAndPerms->second == User::NONE)
+//         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
+
+//     shared_ptr<Question> question;
+//     if (!(question = AppDB().getQuestion(std::stoi(req.get_arg("question-id")))))
+//         return shared_ptr<http_response>(new string_response("No such question", 404, "application/json"));
+//     string responseBody = question->image_base64;
+//     return shared_ptr<http_response>(new string_response(responseBody, 200, "text/plain"));
+// }
 std::shared_ptr<http_response>
 testing_resources::render_GET_question(const http_request &req)
 {
@@ -136,14 +144,32 @@ testing_resources::render_GET_question(const http_request &req)
     if (uidAndPerms->second == User::NONE)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
-    auto question = AppDB().getQuestion(std::stoi(req.get_arg("id")));
+    shared_ptr<Question> question;
+    if (!(question = AppDB().getQuestion(std::stoi(req.get_arg("question-id")))))
+        return shared_ptr<http_response>(new string_response("No such question", 404, "application/json"));
     json j_question;
     JsonConverter::questionToJson(*question, j_question);
     string responseBody;
     JsonConverter::jsonObjectToJsonString(j_question, responseBody);
     return shared_ptr<http_response>(new string_response(responseBody, 200, "application/json"));
 }
+// std::shared_ptr<http_response>
+// testing_resources::render_GET_questionImage(const http_request &req) {
+//     auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+//     if (!uidAndPerms)
+//         return shared_ptr<http_response>(new string_response("Bad Token", 401));
+//     if (uidAndPerms->second == User::NONE)
+//         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
+//     shared_ptr<Question> question;
+//     if (!(question = AppDB().getQuestion(std::stoi(req.get_arg("question-id")))))
+//         return shared_ptr<http_response>(new string_response("No such question", 404, "application/json"));
+//     json j_question;
+//     JsonConverter::questionToJson(*question, j_question);
+//     string responseBody;
+//     JsonConverter::jsonObjectToJsonString(j_question, responseBody);
+//     return shared_ptr<http_response>(new file_response(responseBody, 200, "application/json"));
+// }
 // .../testing/categories/{category}/tickets/{number[0-9]+} -> json {id}
 std::shared_ptr<http_response> testing_resources::render_PUT_ticket(const http_request &req)
 {
@@ -160,7 +186,7 @@ std::shared_ptr<http_response> testing_resources::render_PUT_ticket(const http_r
 
     int num = std::stoi(req.get_arg("number"));
     int newId;
-    if ((newId = AppDB().insertTicket(category, num)))
+    if (!(newId = AppDB().insertTicket(category, num)))
         return shared_ptr<http_response>(new string_response("Could not insert new ticket!", 409));
     json j_response;
     j_response["id"] = newId;
@@ -181,14 +207,14 @@ std::shared_ptr<http_response> testing_resources::render_PUT_question(const http
 
 
     json j_question;
-    if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_question))
+    if (JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_question))
         return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
     Question question;
-    if (!JsonConverter::jsonToQuestion(j_question, question))
+    if (JsonConverter::jsonToQuestion(j_question, question))
         return shared_ptr<http_response>(new string_response("Bad Question struct!", 400));
 
     int newId;
-    if ((newId = AppDB().insertQuestion(question)))
+    if (!(newId = AppDB().insertQuestion(question)))
         return shared_ptr<http_response>(new string_response("Could not insert new question!", 409));
     json j_response;
     j_response["id"] = newId;
@@ -207,7 +233,7 @@ std::shared_ptr<http_response> testing_resources::render_DELETE_ticket(const htt
      && uidAndPerms->second != User::SUPERUSER)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
-    if (AppDB().deleteTicket(std::stoi(req.get_arg("id"))))
+    if (AppDB().deleteTicket(std::stoi(req.get_arg("ticket-id"))))
         return shared_ptr<http_response>(new string_response("No such ticket!", 404));
     return shared_ptr<http_response>(new string_response("SUCCESS"));
 }
@@ -226,8 +252,8 @@ std::shared_ptr<http_response> testing_resources::render_DELETE_question(const h
         return shared_ptr<http_response>(new string_response("No such ticket!", 404));
     return shared_ptr<http_response>(new string_response("SUCCESS"));
 }
-// .../testing/questions/by-id/{id} <- json {question}
-std::shared_ptr<http_response> render_PATCH_question(const http_request &req)
+// .../testing/questions/by-id/{id|[0-9]+} <- json {question}
+std::shared_ptr<http_response> testing_resources::render_PATCH_question(const http_request &req)
 {
     auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
     if (!uidAndPerms)
@@ -237,13 +263,13 @@ std::shared_ptr<http_response> render_PATCH_question(const http_request &req)
         return std::shared_ptr<http_response>(new string_response("Forbidden", 403));
 
     json j_question;
-    if (!JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_question))
+    if (JsonConverter::jsonStringToJsonObject(string(req.get_content()), j_question))
         return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
     Question question;
-    if (!JsonConverter::jsonToQuestion(j_question, question))
+    if (JsonConverter::jsonToQuestion(j_question, question))
         return shared_ptr<http_response>(new string_response("Bad Question struct!", 400));
 
-    int questionId = std::stoi(req.get_arg("id"));
+    int questionId = std::stoi(req.get_arg("question-id"));
     if (!AppDB().changeQuestion(questionId, question))
         return shared_ptr<http_response>(new string_response("Could not change the question!", 409));
 
