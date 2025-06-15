@@ -51,7 +51,7 @@ shared_ptr<http_response> lectures_resource::render_GET_lecturesByGroup(const ht
     return shared_ptr<http_response>(new string_response(responseBody));
 }
 // .../lectures <- JSON {lecture}
-shared_ptr<http_response> lectures_resource::render_PUT_lecture(const http_request &req)
+shared_ptr<http_response> lectures_resource::render_POST_lecture(const http_request &req)
 {
     auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
     if (!uidAndPerms)
@@ -66,6 +66,7 @@ shared_ptr<http_response> lectures_resource::render_PUT_lecture(const http_reque
         return shared_ptr<http_response>(new string_response("Bad JSON!", 400));
     if (uidAndPerms->first != lecture.teacherId)
         return shared_ptr<http_response>(new string_response("Forbidden!", 403));
+    lecture.teacherId = uidAndPerms->first;
     if(AppDB().insertLecture(lecture))
         return shared_ptr<http_response>(new string_response("Lecture already exist!", 409));
 

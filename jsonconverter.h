@@ -40,8 +40,6 @@ public:
     static Result jsonToLecture(nlohmann::json &, Lecture &);
     static Result lectureToJson(Lecture &, nlohmann::json &);
 
-    static Result jsonToPracticeSlot(nlohmann::json &, PracticeSlot &);
-    static Result jsonToPracticeBooking(nlohmann::json &, PracticeBooking &);
 };
 
 #endif // JSONCONVERTER_H

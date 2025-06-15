@@ -67,6 +67,7 @@ public:
     bool setUserStudent(int id, int groupId, int assignedTeacherId);
     bool changeStudentGroup(int studentId, int groupId);
     bool assignStudentToTeacher(int studentId, int teacherId);
+
     // Make teacher
     bool setUserTeacher(int id, string car);
 

@@ -16,10 +16,11 @@ protected:
     std::shared_ptr<http_response> render_GET_lecturesByGroup(const http_request &req);
 
     // .../lectures <- JSON {lecture}
-    std::shared_ptr<http_response> render_PUT_lecture(const http_request &req);
+    std::shared_ptr<http_response> render_POST_lecture(const http_request &req);
     // .../lectures/{id}
     std::shared_ptr<http_response> render_DELETE_lecture(const http_request &req);
 };
+
 // GET /lectures/by-teacher/{id}
 class lectures_by_teacher_resource : public lectures_resource {
 public:
@@ -39,8 +40,8 @@ public:
 // PUT /lectures
 class create_lecture_resource : public lectures_resource {
 public:
-    std::shared_ptr<http_response> render_PUT(const http_request& req) override {
-        return render_PUT_lecture(req);
+    std::shared_ptr<http_response> render_POST(const http_request& req) override {
+        return render_POST_lecture(req);
     }
 };
 

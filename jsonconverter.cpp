@@ -186,29 +186,7 @@ JsonConverter::Result JsonConverter::lectureToJson(Lecture &lecture, nlohmann::j
     return SUCCESS;
 }
 
-JsonConverter::Result JsonConverter::jsonToPracticeSlot(nlohmann::json &j, PracticeSlot &slot)
-{
-    if (!j["teacher-id"].is_number()
-        || !j["time"].is_number()
-    ) return CONVERTATION_ERROR;
 
-    j["teacher-id"].get_to(slot.teacherId);
-    j["time"].get_to(slot.time);
-
-    return SUCCESS;
-}
-
-JsonConverter::Result JsonConverter::jsonToPracticeBooking(nlohmann::json &j, PracticeBooking &booking)
-{
-    if (!j["student-id"].is_string()
-        || !j["time"].is_number()
-        ) return CONVERTATION_ERROR;
-
-    j["student-id"].get_to(booking.studentId);
-    j["slot-id"].get_to(booking.slotId);
-
-    return SUCCESS;
-}
 
 
 

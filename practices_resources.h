@@ -22,19 +22,16 @@ protected:
     // .../practices/by-teacher -> JSON
     std::shared_ptr<http_response> render_GET_slotsByTeacher(const http_request &req);
 
-    // .../practices <- JSON
-    std::shared_ptr<http_response> render_PUT_practiceSlot(const http_request &req);
+    // .../practices/slots <- JSON
+    std::shared_ptr<http_response> render_POST_practiceSlot(const http_request &req);
 
-    // .../practices <- JSON
+    // .../practices/bookings <- JSON
     std::shared_ptr<http_response> render_POST_practiceBooking(const http_request &req);
 
     // .../practices/slots/{id}
     std::shared_ptr<http_response> render_DELETE_practiceSlot(const http_request &req);
     // .../practices/bookings/{id[0-9]+}
     std::shared_ptr<http_response> render_DELETE_practiceBooking(const http_request &req);
-
-public:
-    std::shared_ptr<http_response> render(const http_request &);
 };
 // GET /practices/by-student -> JSON
 class student_slots_resource : public practices_resource {
@@ -50,14 +47,14 @@ public:
         return render_GET_slotsByTeacher(req);
     }
 };
-// PUT /practices <- JSON
+// POST /practices/slots <- JSON
 class create_slot_resource : public practices_resource {
 public:
-    std::shared_ptr<http_response> render_PUT(const http_request& req) override {
-        return render_PUT_practiceSlot(req);
+    std::shared_ptr<http_response> render_POST(const http_request& req) override {
+        return render_POST_practiceSlot(req);
     }
 };
-// POST /practices <- JSON
+// POST /practices/bookings <- JSON
 class create_booking_resource : public practices_resource {
 public:
     std::shared_ptr<http_response> render_POST(const http_request& req) override {

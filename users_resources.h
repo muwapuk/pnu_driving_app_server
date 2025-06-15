@@ -13,14 +13,38 @@ enum UserAttributes {
     BLANK
 };
 
-
 class users_resources : public http_resource
 {
+protected:
+    // .../users/self-id -> JSON {id}
+    std::shared_ptr<http_response> render_GET_selfId(const http_request &req);
+    // .../users/{user-id|[0-9]+}/name -> JSON {name}
+    std::shared_ptr<http_response> render_GET_userName(const http_request &req);
+    // .../users/students/{student-id|[0-9]+}/group -> JSON {group-id, group-name}
+    std::shared_ptr<http_response> render_GET_studentGroup(const http_request &req);
+
+};
+
+// GET .../users/self-id -> JSON {id}
+class users_selfId_resource : public users_resources {
 public:
-   //  std::shared_ptr<http_response> render_GET(const http_request &req);
-   // // std::shared_ptr<http_response> render_DELETE(const http_request &req);
-   //  std::shared_ptr<http_response> render_PATCH(const http_request &req);
-   //  std::shared_ptr<http_response> render(const http_request &);
+    std::shared_ptr<http_response> render_GET(const http_request& req) override {
+        return render_GET_selfId(req);
+    }
+};
+// GET .../users/{user-id|[0-9]+}/name -> JSON {name}
+class users_name_resource : public users_resources {
+public:
+    std::shared_ptr<http_response> render_GET(const http_request& req) override {
+        return render_GET_userName(req);
+    }
+};
+// GET .../users/students/{student-id|[0-9]+}/group -> JSON {group-id, group-name}
+class users_studentGroup_resource : public users_resources {
+public:
+    std::shared_ptr<http_response> render_GET(const http_request& req) override {
+        return render_GET_studentGroup(req);
+    }
 };
 
 }
