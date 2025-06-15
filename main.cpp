@@ -50,11 +50,14 @@ int main(int, char**)
 
     // Users resources
     ur::users_selfId_resource users_selfId_res;
+    ur::users_selfPermissins_resource users_selfPermissions_res;
     ur::users_name_resource users_name_res;
     ur::users_studentGroup_resource studentGroup_res;
 
     // Get self user id
     ws.register_resource("/users/self-id", &users_selfId_res); // GET -> JSON {id}
+    // Get self permissions
+    ws.register_resource("/users/self-permissions", &users_selfPermissions_res); // GET -> JSON {permissions}
     // Get user name by {user-id}
     ws.register_resource("/users/{user-id|[0-9]+}/name", &users_name_res); // GET -> JSON {name}
     // get group by {student-id}

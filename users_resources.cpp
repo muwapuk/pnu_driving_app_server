@@ -5,6 +5,16 @@
 
 #define HEADER_RESPONSE
 
+
+namespace ur {
+std::map <User::Permissions, string> permissionsStrings = {
+    {User::SUPERUSER, "administrator"},
+    {User::TEACHER, "teacher"},
+    {User::STUDENT, "student"},
+    {User::GUEST, "guest"},
+};
+}
+
 using json = nlohmann::json;
 using namespace ur;
 
@@ -18,6 +28,21 @@ users_resources::render_GET_selfId(const http_request &req)
 
     json j_response;
     j_response["id"] = uidAndPerms->first;
+
+    string responseBody;
+    JsonConverter::jsonObjectToJsonString(j_response, responseBody);
+    return shared_ptr<http_response>(new string_response(responseBody, 200, "application/json"));
+}
+// .../users/self-permissions -> JSON {permissions}
+std::shared_ptr<http_response>
+users_resources::render_GET_selfPermissions(const http_request &req)
+{
+    auto uidAndPerms = AppDB().getUserIdAndPermissionsByToken(string(req.get_header("token")));
+    if (!uidAndPerms)
+        return shared_ptr<http_response>(new string_response("Bad Token", 401));
+
+    json j_response;
+    j_response["permissions"] = permissionsStrings[uidAndPerms->second];
 
     string responseBody;
     JsonConverter::jsonObjectToJsonString(j_response, responseBody);
